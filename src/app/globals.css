@@ -19,6 +19,8 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -29,6 +31,7 @@ body {
   font-weight: 400;
   line-height: 1.6;
   letter-spacing: 0.01em;
+  overflow-x: clip;
 }
 
 img {
@@ -1300,20 +1303,117 @@ footer {
 }
 
 @media (max-width: 900px) {
+  :root {
+    --pad: clamp(16px, 5vw, 28px);
+  }
+
+  .section {
+    padding: clamp(56px, 14vw, 96px) 0;
+  }
+
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: clamp(28px, 8vw, 48px);
+  }
+
+  .section-head h2 {
+    font-size: clamp(2.2rem, 11vw, 3.4rem);
+    line-height: 0.95;
+  }
+
+  .nav {
+    padding: 10px var(--pad);
+    padding-top: max(10px, env(safe-area-inset-top));
+    gap: 12px;
+  }
+
+  .logo img {
+    height: 32px;
+    max-width: 118px;
+  }
+
+  .burger {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-right: -6px;
+    font-size: 1.35rem;
+    border-radius: 8px;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .burger:active {
+    background: rgba(255, 204, 0, 0.12);
+    color: var(--red);
+  }
+
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: rgba(8, 8, 8, 0.98);
+    backdrop-filter: blur(18px);
+    padding: 8px var(--pad) max(28px, env(safe-area-inset-bottom));
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  }
+
+  .nav-links.is-open {
+    display: flex;
+  }
+
+  .nav-links a {
+    padding: 14px 4px;
+    font-size: 0.82rem;
+    letter-spacing: 0.16em;
+    border-bottom: 1px solid rgba(243, 241, 238, 0.06);
+  }
+
+  .nav-links a:last-child {
+    border-bottom: 0;
+    margin-top: 8px;
+    text-align: center;
+    border: 1px solid var(--red);
+    background: var(--red);
+    color: #111;
+    font-weight: 600;
+    padding: 14px 16px;
+  }
+
+  .nav-cta {
+    display: none;
+  }
+
+  /* Hero : affiche le poster entier (format paysage) sans crop agressif */
   .hero {
     min-height: 0;
     height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0 4px;
   }
 
   .hero-stage,
   .hero-parallax {
     height: auto;
+    width: 100%;
   }
 
   .hero img {
+    width: 100%;
     height: auto;
-    max-height: none;
+    max-height: min(82svh, 680px);
     object-fit: contain;
+    object-position: center center;
   }
 
   .about-grid,
@@ -1325,70 +1425,237 @@ footer {
     grid-template-columns: 1fr;
   }
 
-  .cf-row {
-    grid-template-columns: 1fr;
-  }
-
-  .clux-social-row {
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .clux-h2 {
-    font-size: clamp(2.4rem, 10vw, 3.2rem);
-  }
-
-  .logo img {
-    height: 34px;
-    max-width: 128px;
-  }
-
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    align-items: flex-start;
-    background: #0a0a0a;
-    padding: 20px var(--pad) 28px;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .nav-links.is-open {
-    display: flex;
-  }
-
-  .burger {
-    display: block;
-  }
-
-  .card {
-    grid-column: span 12;
-    min-height: 360px;
-    aspect-ratio: 4 / 5;
-  }
-
-  .facts {
-    grid-template-columns: 1fr;
+  .about-grid {
+    gap: 28px;
   }
 
   .about-photo {
     order: -1;
+    border-radius: 2px;
   }
 
   .about-photo img {
-    height: min(68vh, 560px);
+    height: min(58svh, 420px);
     object-position: center 12%;
   }
 
-  .soft-row {
-    grid-template-columns: 1fr;
+  .about-name {
+    font-size: clamp(2rem, 10vw, 2.8rem);
   }
 
-  .nav-cta {
+  .about-role {
+    margin-bottom: 18px;
+    font-size: 0.72rem;
+  }
+
+  .about-text p {
+    font-size: 0.95rem;
+  }
+
+  .facts {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .fact strong {
+    font-size: 2rem;
+  }
+
+  .skill-list {
+    gap: 8px;
+  }
+
+  .chip {
+    padding: 7px 12px;
+    font-size: 0.72rem;
+  }
+
+  /* Filtres portfolio : défilement horizontal fluide */
+  .filters {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 0 calc(var(--pad) * -1) 28px;
+    padding: 4px var(--pad) 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .filters::-webkit-scrollbar {
     display: none;
+  }
+
+  .filter {
+    flex: 0 0 auto;
+    padding: 10px 16px;
+    font-size: 0.72rem;
+    border-radius: 999px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .card {
+    grid-column: auto;
+    min-height: 0;
+    aspect-ratio: 4 / 5;
+    border-radius: 2px;
+  }
+
+  .card-meta {
+    padding: 18px 16px;
+  }
+
+  .card-meta h3 {
+    font-size: clamp(1.35rem, 6vw, 1.7rem);
+  }
+
+  /* Compétences logiciels */
+  .soft-row {
+    grid-template-columns: 1fr auto;
+    gap: 10px 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(243, 241, 238, 0.06);
+  }
+
+  .soft-row .bar {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+
+  .soft-logo {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Contact */
+  .clux-grid {
+    gap: 36px;
+  }
+
+  .clux-h2 {
+    font-size: clamp(2.35rem, 11vw, 3.1rem);
+    margin: 12px 0 14px;
+  }
+
+  .clux-sub {
+    font-size: 0.95rem;
+    margin-bottom: 28px;
+  }
+
+  .clux-social-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .csoc {
+    width: 100%;
+  }
+
+  .clux-card {
+    padding: 22px 18px 24px;
+  }
+
+  .clux-form-ttl {
+    font-size: 0.95rem;
+    margin-bottom: 18px;
+  }
+
+  .cf-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* 16px = pas de zoom iOS au focus */
+  .clux-card input,
+  .clux-card textarea,
+  .clux-card select {
+    font-size: 16px;
+    padding: 13px 14px;
+  }
+
+  .cf-submit {
+    padding: 17px 16px;
+    letter-spacing: 0.14em;
+    font-size: 0.8rem;
+    min-height: 52px;
+  }
+
+  .study {
+    width: calc(100% - 20px);
+    margin: 16px auto 40px;
+  }
+
+  .study-top {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .study-hero img {
+    max-height: 48svh;
+  }
+
+  footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 24px var(--pad) max(36px, env(safe-area-inset-bottom));
+    font-size: 0.8rem;
+  }
+
+  .gate-box {
+    padding: 28px 20px;
+  }
+
+  .gate-box h1 {
+    font-size: 2.2rem;
+  }
+}
+
+@media (max-width: 540px) {
+  .section-services-kya {
+    padding: 52px 0;
+  }
+
+  .services-kya-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    max-width: none;
+    margin-inline: 0;
+  }
+
+  .service-kya-body {
+    padding: 16px 14px 20px;
+  }
+
+  .service-kya-card-title {
+    font-size: 0.98rem;
+  }
+
+  .service-kya-card-text {
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  .about-photo img {
+    height: min(52svh, 360px);
+  }
+
+  .cli {
+    gap: 12px;
+  }
+
+  .cli-ico {
+    width: 34px;
+    height: 34px;
+  }
+
+  .clux-infos {
+    gap: 18px;
   }
 }
 
@@ -1770,6 +2037,11 @@ footer {
   }
   .cv-modal-actions {
     grid-template-columns: 1fr;
+  }
+  .cv-modal-card {
+    width: calc(100% - 28px);
+    margin: 24px auto;
+    padding: 24px 18px;
   }
 }
 

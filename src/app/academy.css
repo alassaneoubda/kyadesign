@@ -291,6 +291,47 @@
   .academy-mode {
     grid-template-columns: 1fr;
   }
+
+  .academy-card,
+  .academy-pack,
+  .academy-mode {
+    border-radius: 14px;
+  }
+
+  .academy-visual {
+    height: min(42vw, 200px);
+    min-height: 160px;
+  }
+
+  .academy-body,
+  .academy-pack .academy-body,
+  .academy-mode > div {
+    padding: 18px 16px 20px;
+  }
+
+  .academy-body h3,
+  .academy-pack h3,
+  .academy-mode h3 {
+    font-size: clamp(1.55rem, 7vw, 2rem);
+  }
+
+  .academy-card:hover,
+  .academy-pack:hover,
+  .academy-mode:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 540px) {
+  .gallery-lightbox-actions {
+    flex-direction: column;
+  }
+
+  .gallery-lightbox-actions .btn,
+  .gallery-lightbox-actions a {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
