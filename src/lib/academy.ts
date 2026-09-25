@@ -69,24 +69,38 @@ export type ContactBrief = {
 };
 
 /**
- * Construit le brief contact à préremplir dans WhatsApp.
+ * Construit le brief contact à préremplir dans WhatsApp (modèle commande KYA).
  * @param brief Champs du formulaire contact.
  * @returns Texte prêt pour wa.me.
  */
 export function buildContactMessage(brief: ContactBrief): string {
-  const lines = [
-    "Bonjour Yohann,",
-    "Nouvelle demande via le site Kya Design :",
+  const name = brief.name.trim() || "—";
+  const email = brief.email.trim() || "—";
+  const phone = brief.phone.trim() || "Non renseigné";
+  const projectType = brief.projectType.trim() || "À préciser";
+  const budget = brief.budget.trim() || "À discuter";
+  const delay = brief.delay.trim() || "À discuter";
+  const message = brief.message.trim() || "—";
+
+  return [
+    "NOUVELLE COMMANDE",
     "",
-    `Nom : ${brief.name.trim()}`,
-    `Email : ${brief.email.trim()}`,
-  ];
-  if (brief.phone.trim()) lines.push(`Téléphone : ${brief.phone.trim()}`);
-  if (brief.projectType.trim()) lines.push(`Type de projet : ${brief.projectType.trim()}`);
-  if (brief.budget.trim()) lines.push(`Budget : ${brief.budget.trim()}`);
-  if (brief.delay.trim()) lines.push(`Délai : ${brief.delay.trim()}`);
-  lines.push("", "Message :", brief.message.trim());
-  return lines.join("\n");
+    "Bonjour KYA DESIGN 👋,",
+    "",
+    "Je vous contacte depuis votre site web pour une commande.",
+    "",
+    `Je suis ${name}, je souhaite commander un projet de :`,
+    `👉 ${projectType}`,
+    "",
+    `Mon budget estimé : ${budget}`,
+    `Délai souhaité : ${delay}`,
+    "",
+    `Email : ${email}`,
+    `Téléphone : ${phone}`,
+    "",
+    "Voici mon brief :",
+    message,
+  ].join("\n");
 }
 
 /**

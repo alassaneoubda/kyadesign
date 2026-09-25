@@ -39,18 +39,23 @@ test("should_appendText_when_whatsappMessageLinkProvided", () => {
 
 test("should_includeBriefFields_when_buildingContactMessage", () => {
   const message = buildContactMessage({
-    name: "Awa",
-    email: "awa@example.com",
+    name: "Koné Abdoul",
+    email: "abdoul@example.com",
     phone: "+225 01 02 03 04 05",
-    projectType: "Packaging",
-    budget: "300k–1M FCFA",
-    delay: "2 semaines",
-    message: "Besoin d'une gamme produit.",
+    projectType: "Mockups",
+    budget: "5M+ FCFA",
+    delay: "3 semaines",
+    message: "Je veux des mockups pour ma marque de vêtement de luxe.",
   });
-  assert.match(message, /Nom : Awa/);
-  assert.match(message, /awa@example\.com/);
-  assert.match(message, /Packaging/);
-  assert.match(message, /Besoin d'une gamme produit/);
+  assert.match(message, /^NOUVELLE COMMANDE/);
+  assert.match(message, /Bonjour KYA DESIGN/);
+  assert.match(message, /Je suis Koné Abdoul/);
+  assert.match(message, /👉 Mockups/);
+  assert.match(message, /5M\+ FCFA/);
+  assert.match(message, /3 semaines/);
+  assert.match(message, /abdoul@example\.com/);
+  assert.match(message, /Voici mon brief :/);
+  assert.match(message, /marque de vêtement de luxe/);
 });
 
 test("should_blockSelection_when_limitReached", () => {

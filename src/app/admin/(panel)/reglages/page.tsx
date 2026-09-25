@@ -96,7 +96,7 @@ export default async function SettingsPage({
         <h2>Contact & réseaux</h2>
         <div className="bo-form-grid">
           <label>
-            Téléphone
+            Téléphone (chat WhatsApp prérempli)
             <input name="phone" defaultValue={setting.phone} required />
           </label>
           <label>
@@ -104,7 +104,7 @@ export default async function SettingsPage({
             <input name="contactLocation" defaultValue={setting.contactLocation} required />
           </label>
           <label>
-            WhatsApp (lien)
+            WhatsApp (lien affichage)
             <input name="whatsapp" defaultValue={setting.whatsapp} required />
           </label>
           <label>

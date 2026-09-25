@@ -63,7 +63,7 @@ export function HomeClient({ data }: { data: HomeData }) {
       message: String(formData.get("message") ?? ""),
     };
     window.open(
-      whatsappHref(setting.whatsapp, buildContactMessage(brief)),
+      whatsappHref(setting.phone, buildContactMessage(brief)),
       "_blank",
       "noopener,noreferrer",
     );
@@ -153,7 +153,7 @@ export function HomeClient({ data }: { data: HomeData }) {
   function openWhatsapp() {
     if (!choice) return;
     const message = buildAcademyMessage({ ...choice, mode });
-    window.open(whatsappHref(setting.whatsapp, message), "_blank", "noopener,noreferrer");
+    window.open(whatsappHref(setting.phone, message), "_blank", "noopener,noreferrer");
   }
 
   return (
