@@ -50,13 +50,24 @@ export async function getHomeData() {
       tags: parseTags(project.tags),
       gallery: project.images.map((image) => image.src),
     })),
-    formations: formations.map(({ createdAt: _created, updatedAt: _updated, topics, ...item }) => ({
-      ...item,
-      topics: topicsFromJson(topics),
+    formations: formations.map((formation) => ({
+      id: formation.id,
+      title: formation.title,
+      summary: formation.summary,
+      image: formation.image,
+      published: formation.published,
+      sortOrder: formation.sortOrder,
+      topics: topicsFromJson(formation.topics),
     })),
-    packs: packs.map(({ createdAt: _created, updatedAt: _updated, topics, ...item }) => ({
-      ...item,
-      topics: topicsFromJson(topics),
+    packs: packs.map((pack) => ({
+      id: pack.id,
+      title: pack.title,
+      summary: pack.summary,
+      image: pack.image,
+      highlighted: pack.highlighted,
+      published: pack.published,
+      sortOrder: pack.sortOrder,
+      topics: topicsFromJson(pack.topics),
     })),
     modes: modes.map((item) => ({ ...item, includes: topicsFromJson(item.includes) })),
   };
@@ -75,9 +86,25 @@ export async function getOpenAlbums() {
     include: { photos: { orderBy: { sortOrder: "asc" } } },
   });
   if (!albums.length) return null;
-  return albums.map(({ createdAt: _c, updatedAt: _u, photos, ...album }) => ({
-    ...album,
-    photos: photos.map((photo) => ({
+  return albums.map((album) => ({
+    id: album.id,
+    title: album.title,
+    persons: album.persons,
+    eventDate: album.eventDate,
+    eventType: album.eventType,
+    place: album.place,
+    description: album.description,
+    accessCode: album.accessCode,
+    maxPhotos: album.maxPhotos,
+    cover: album.cover,
+    published: album.published,
+    kind: album.kind,
+    probleme: album.probleme,
+    concept: album.concept,
+    creation: album.creation,
+    resultat: album.resultat,
+    sortOrder: album.sortOrder,
+    photos: album.photos.map((photo) => ({
       id: photo.id,
       originalName: photo.originalName,
       bytes: photo.bytes,

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AlbumBrowser } from "@/components/gallery/album-browser";
 import { GateForm } from "@/components/forms/auth-forms";
 import { lockAlbumAction } from "@/server/actions";
@@ -12,11 +13,11 @@ export default async function GaleriePage() {
   return (
     <>
       <header className="nav">
-        <a className="logo" href="/" aria-label="KYA Design — Accueil">
+        <Link className="logo" href="/" aria-label="KYA Design — Accueil">
           <img src="/assets/brand/kya-design-logo.png" alt="KYA Designer" width={220} height={80} />
-        </a>
+        </Link>
         <nav className="nav-links">
-          <a href="/">Retour au portfolio</a>
+          <Link href="/">Retour au portfolio</Link>
         </nav>
       </header>
       {!albums ? (

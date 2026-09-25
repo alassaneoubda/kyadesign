@@ -1,11 +1,14 @@
 import archiver from "archiver";
 import { randomUUID } from "crypto";
+import { createReadStream } from "fs";
+import { access, constants } from "fs/promises";
 import { PassThrough, Readable } from "stream";
 import { z } from "zod";
 import { canReadAlbum } from "@/lib/album-access";
 import { apiError } from "@/lib/api-error";
 import { logInfo } from "@/lib/log";
 import { prisma } from "@/lib/prisma";
+import { isR2Configured, r2GetBuffer, r2OriginalKey } from "@/lib/r2";
 import { originalPath } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -47,12 +50,30 @@ export async function POST(request: Request) {
   const archive = archiver("zip", { zlib: { level: 0 } });
   archive.on("error", (error) => pass.destroy(error));
   archive.pipe(pass);
-  photos.forEach((photo, index) => {
-    archive.file(originalPath(photo.albumId, photo.id, photo.ext), {
-      name: zipName(photo.originalName, index),
-    });
-  });
-  void archive.finalize();
+
+  void (async () => {
+    try {
+      for (let index = 0; index < photos.length; index += 1) {
+        const photo = photos[index];
+        const name = zipName(photo.originalName, index);
+        if (isR2Configured()) {
+          const buffer = await r2GetBuffer(r2OriginalKey(photo.albumId, photo.id, photo.ext));
+          if (buffer) {
+            archive.append(buffer, { name });
+            continue;
+          }
+        }
+        const local = originalPath(photo.albumId, photo.id, photo.ext);
+        await access(local, constants.R_OK);
+        archive.append(createReadStream(local), { name });
+      }
+      await archive.finalize();
+    } catch (error) {
+      archive.abort();
+      pass.destroy(error instanceof Error ? error : new Error("ZIP impossible."));
+    }
+  })();
+
   logInfo("album.download", { albumId, count: String(photos.length) });
 
   const filename = `${album.title.replace(/[^\w\- ]/g, "").trim().replace(/\s+/g, "_") || "album"}.zip`;

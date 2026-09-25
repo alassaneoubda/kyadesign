@@ -3,15 +3,31 @@ import { stat } from "fs/promises";
 import { Readable } from "stream";
 import { apiError } from "@/lib/api-error";
 import { logInfo } from "@/lib/log";
-import { cvAbsolutePath } from "@/lib/storage";
+import { isR2Configured } from "@/lib/r2";
+import { cvAbsolutePath, cvObjectKey } from "@/lib/storage";
+import { streamR2Object } from "@/lib/stream-file";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Téléchargement public du CV (sans mot de passe).
+ * Téléchargement public du CV (R2 puis disque local).
  */
 export async function GET() {
+  if (isR2Configured()) {
+    const fromR2 = await streamR2Object(
+      cvObjectKey(),
+      "application/pdf",
+      "CV_Yohann_Armel_K.pdf",
+      "attachment",
+      "public, max-age=3600"
+    );
+    if (fromR2) {
+      logInfo("cv.download");
+      return fromR2;
+    }
+  }
+
   const file = cvAbsolutePath();
   const info = await stat(file).catch(() => null);
   if (!info) return apiError(404, "NOT_FOUND", "Fichier CV introuvable.");

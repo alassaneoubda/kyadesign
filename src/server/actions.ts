@@ -238,6 +238,8 @@ export async function deleteAlbumAction(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+  const { deleteAlbumFiles } = await import("@/lib/storage");
+  await deleteAlbumFiles(id);
   await prisma.album.delete({ where: { id } });
   logInfo("album.delete", { albumId: id });
   revalidatePath("/galerie");

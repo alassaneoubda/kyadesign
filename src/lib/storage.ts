@@ -1,7 +1,22 @@
+/**
+ * Stockage images : R2 en production, disque local en secours.
+ * Auteur : Yohann Armel Koukoui / Kya Design — 2026-09-25 — v2
+ */
 import { randomUUID } from "crypto";
 import { mkdir, writeFile, unlink } from "fs/promises";
 import path from "path";
 import sharp from "sharp";
+import {
+  isR2Configured,
+  r2CvKey,
+  r2Delete,
+  r2DeletePrefix,
+  r2OriginalKey,
+  r2PreviewKey,
+  r2Put,
+  r2ThumbKey,
+  r2UploadKey,
+} from "@/lib/r2";
 
 const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"]);
 
@@ -13,44 +28,6 @@ const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"]);
 export function imageExtension(filename: string): string {
   const ext = path.extname(filename).toLowerCase();
   return IMAGE_EXT.has(ext) ? ext : "";
-}
-
-/**
- * Enregistre un visuel public (création, service, formation, pack, mode).
- * Stocké hors de /public pour rester accessible après un `next start`.
- * @param file Fichier du formulaire.
- * @param folder Dossier sous storage/uploads.
- * @param options.compress Redimensionne à ~1200px en WebP (Academy / site).
- * @returns Chemin public via l'API, ou null si aucun fichier.
- */
-export async function savePublicImage(
-  file: File,
-  folder: string,
-  options?: { compress?: boolean }
-): Promise<string | null> {
-  if (!file || file.size === 0) return null;
-  if (file.size > 25 * 1024 * 1024) throw new Error("Image trop lourde. Maximum 25 Mo.");
-  const ext = imageExtension(file.name) || (file.type === "image/svg+xml" ? "" : "");
-  if (!ext) throw new Error("Format accepté : JPG, PNG, WEBP ou TIFF.");
-  const safeFolder = folder.replace(/[^a-z0-9_-]/gi, "");
-  if (!safeFolder) throw new Error("Dossier image invalide.");
-  const dir = path.join(process.cwd(), "storage", "uploads", safeFolder);
-  await mkdir(dir, { recursive: true });
-  const bytes = Buffer.from(await file.arrayBuffer());
-
-  if (options?.compress && ext !== ".svg") {
-    const filename = `${randomUUID()}.webp`;
-    await sharp(bytes, { failOn: "none" })
-      .rotate()
-      .resize({ width: 1200, withoutEnlargement: true })
-      .webp({ quality: 82 })
-      .toFile(path.join(dir, filename));
-    return `/api/uploads/${safeFolder}/${filename}`;
-  }
-
-  const filename = `${randomUUID()}${ext}`;
-  await writeFile(path.join(dir, filename), bytes);
-  return `/api/uploads/${safeFolder}/${filename}`;
 }
 
 function albumDir(albumId: string): string {
@@ -69,7 +46,15 @@ export function previewPath(albumId: string, photoId: string): string {
   return path.join(albumDir(albumId), "previews", `${photoId}.webp`);
 }
 
-async function writeDerivative(bytes: Buffer, dest: string, width: number, quality: number): Promise<void> {
+async function writeDerivativeBuffer(bytes: Buffer, width: number, quality: number): Promise<Buffer> {
+  return sharp(bytes, { failOn: "none" })
+    .rotate()
+    .resize({ width, withoutEnlargement: true })
+    .webp({ quality })
+    .toBuffer();
+}
+
+async function writeDerivativeLocal(bytes: Buffer, dest: string, width: number, quality: number): Promise<void> {
   await mkdir(path.dirname(dest), { recursive: true });
   await sharp(bytes, { failOn: "none" })
     .rotate()
@@ -79,11 +64,59 @@ async function writeDerivative(bytes: Buffer, dest: string, width: number, quali
 }
 
 /**
- * Écrit le fichier original tel quel, puis des aperçus légers pour l'affichage.
- * Le fichier d'origine n'est ni recompressé ni réenregistré.
+ * Enregistre un visuel public (création, service, formation, pack, mode).
+ * @param file Fichier du formulaire.
+ * @param folder Dossier logique.
+ * @param options.compress Redimensionne à ~1200px en WebP.
+ * @returns Chemin public via l'API, ou null si aucun fichier.
+ */
+export async function savePublicImage(
+  file: File,
+  folder: string,
+  options?: { compress?: boolean }
+): Promise<string | null> {
+  if (!file || file.size === 0) return null;
+  if (file.size > 25 * 1024 * 1024) throw new Error("Image trop lourde. Maximum 25 Mo.");
+  const ext = imageExtension(file.name) || (file.type === "image/svg+xml" ? "" : "");
+  if (!ext) throw new Error("Format accepté : JPG, PNG, WEBP ou TIFF.");
+  const safeFolder = folder.replace(/[^a-z0-9_-]/gi, "");
+  if (!safeFolder) throw new Error("Dossier image invalide.");
+  const bytes = Buffer.from(await file.arrayBuffer());
+
+  let filename: string;
+  let payload: Buffer;
+  let contentType: string;
+
+  if (options?.compress && ext !== ".svg") {
+    filename = `${randomUUID()}.webp`;
+    payload = await sharp(bytes, { failOn: "none" })
+      .rotate()
+      .resize({ width: 1200, withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
+    contentType = "image/webp";
+  } else {
+    filename = `${randomUUID()}${ext}`;
+    payload = bytes;
+    contentType = contentTypeFor(ext);
+  }
+
+  if (isR2Configured()) {
+    await r2Put(r2UploadKey(safeFolder, filename), payload, contentType);
+  } else {
+    const dir = path.join(process.cwd(), "storage", "uploads", safeFolder);
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, filename), payload);
+  }
+
+  return `/api/uploads/${safeFolder}/${filename}`;
+}
+
+/**
+ * Écrit l'original tel quel + aperçus légers (R2 ou disque).
  * @param albumId Album cible.
  * @param photoId Identifiant de la photo.
- * @param file Fichier envoyé par le photographe.
+ * @param file Fichier envoyé.
  */
 export async function saveOriginalPhoto(
   albumId: string,
@@ -95,17 +128,41 @@ export async function saveOriginalPhoto(
   const ext = imageExtension(file.name);
   if (!ext) throw new Error("Format accepté : JPG, PNG, WEBP ou TIFF.");
   const bytes = Buffer.from(await file.arrayBuffer());
-  const dest = originalPath(albumId, photoId, ext);
-  await mkdir(path.dirname(dest), { recursive: true });
-  await writeFile(dest, bytes);
-  await Promise.all([
-    writeDerivative(bytes, thumbPath(albumId, photoId), 640, 70),
-    writeDerivative(bytes, previewPath(albumId, photoId), 1600, 78),
+  const [thumb, preview] = await Promise.all([
+    writeDerivativeBuffer(bytes, 640, 70),
+    writeDerivativeBuffer(bytes, 1600, 78),
   ]);
+
+  if (isR2Configured()) {
+    await Promise.all([
+      r2Put(r2OriginalKey(albumId, photoId, ext), bytes, contentTypeFor(ext)),
+      r2Put(r2ThumbKey(albumId, photoId), thumb, "image/webp"),
+      r2Put(r2PreviewKey(albumId, photoId), preview, "image/webp"),
+    ]);
+  } else {
+    const dest = originalPath(albumId, photoId, ext);
+    await mkdir(path.dirname(dest), { recursive: true });
+    await writeFile(dest, bytes);
+    await Promise.all([
+      writeDerivativeLocal(bytes, thumbPath(albumId, photoId), 640, 70),
+      writeDerivativeLocal(bytes, previewPath(albumId, photoId), 1600, 78),
+    ]);
+  }
+
   return { ext, bytes: bytes.length };
 }
 
+/**
+ * Supprime les fichiers d'une photo (R2 et/ou disque).
+ */
 export async function deletePhotoFiles(albumId: string, photoId: string, ext: string): Promise<void> {
+  if (isR2Configured()) {
+    await Promise.all([
+      r2Delete(r2OriginalKey(albumId, photoId, ext)),
+      r2Delete(r2ThumbKey(albumId, photoId)),
+      r2Delete(r2PreviewKey(albumId, photoId)),
+    ]);
+  }
   await Promise.all(
     [originalPath(albumId, photoId, ext), thumbPath(albumId, photoId), previewPath(albumId, photoId)].map((file) =>
       unlink(file).catch(() => undefined)
@@ -113,9 +170,24 @@ export async function deletePhotoFiles(albumId: string, photoId: string, ext: st
   );
 }
 
+/**
+ * Supprime tous les fichiers d'un album (préfixe R2 + dossier local).
+ * @param albumId Identifiant album.
+ */
+export async function deleteAlbumFiles(albumId: string): Promise<void> {
+  if (isR2Configured()) {
+    await r2DeletePrefix(`albums/${albumId}/`);
+  }
+}
+
 export function cvAbsolutePath(): string {
   const name = process.env.CV_FILE_NAME || "CV_Yohann_Armel_K.pdf";
   return path.join(process.cwd(), "storage", "cv", name);
+}
+
+export function cvObjectKey(): string {
+  const name = process.env.CV_FILE_NAME || "CV_Yohann_Armel_K.pdf";
+  return r2CvKey(name);
 }
 
 export function contentTypeFor(ext: string): string {
