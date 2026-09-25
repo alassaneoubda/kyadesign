@@ -15,7 +15,7 @@ async function main() {
       aboutRole: "Graphiste & Directeur Créatif — KYA Design",
       footerLine: "Yohann Armel — Designer graphique",
       phone: "+225 05 64 36 95 54",
-      whatsapp: "https://wa.me/message/ZHWZ6LIES7PRF1",
+      whatsapp: "https://wa.me/message/BJI52IVEFBN3O1",
       whatsappDisplay: "+225 05 64 36 95 54 · Disponible sur WhatsApp",
       email: "koukouiyohannarmel@gmail.com",
       instagram: "https://instagram.com/kya_designer1",

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildAcademyMessage, selectionState, whatsappHref } from "./academy";
+import { buildAcademyMessage, buildContactMessage, selectionState, whatsappHref } from "./academy";
 import { isAccessCode, normalizeCode } from "./codes";
 
 test("should_includeModeAndTitle_when_formationChosen", () => {
@@ -29,6 +29,28 @@ test("should_encodeMessage_when_buildingWhatsappLink", () => {
   const href = whatsappHref("+225 05 64 36 95 54", "Bonjour Yohann");
   assert.equal(href.startsWith("https://wa.me/2250564369554?text="), true);
   assert.match(href, /Bonjour%20Yohann/);
+});
+
+test("should_appendText_when_whatsappMessageLinkProvided", () => {
+  const href = whatsappHref("https://wa.me/message/BJI52IVEFBN3O1", "Bonjour Yohann");
+  assert.equal(href.startsWith("https://wa.me/message/BJI52IVEFBN3O1"), true);
+  assert.match(href, /text=Bonjour(\+|%20)Yohann/);
+});
+
+test("should_includeBriefFields_when_buildingContactMessage", () => {
+  const message = buildContactMessage({
+    name: "Awa",
+    email: "awa@example.com",
+    phone: "+225 01 02 03 04 05",
+    projectType: "Packaging",
+    budget: "300k–1M FCFA",
+    delay: "2 semaines",
+    message: "Besoin d'une gamme produit.",
+  });
+  assert.match(message, /Nom : Awa/);
+  assert.match(message, /awa@example\.com/);
+  assert.match(message, /Packaging/);
+  assert.match(message, /Besoin d'une gamme produit/);
 });
 
 test("should_blockSelection_when_limitReached", () => {

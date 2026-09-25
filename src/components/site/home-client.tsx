@@ -1,7 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { buildAcademyMessage, whatsappHref, type AcademyKind } from "@/lib/academy";
+import { useActionState, useEffect, useState, type FormEvent } from "react";
+import {
+  buildAcademyMessage,
+  buildContactMessage,
+  whatsappHref,
+  type AcademyKind,
+} from "@/lib/academy";
 import type { HomeData } from "@/lib/queries";
 import { submitContactAction } from "@/server/actions";
 
@@ -39,6 +44,31 @@ export function HomeClient({ data }: { data: HomeData }) {
   const [mode, setMode] = useState(data.modes[0]?.title ?? "En ligne");
   const [contactState, submitContact, contactPending] = useActionState(submitContactAction, null);
   const year = new Date().getFullYear();
+
+  /**
+   * Enregistre la demande (BO + e-mail) et ouvre WhatsApp avec le brief prérempli.
+   * Le client doit encore appuyer sur Envoyer dans WhatsApp.
+   */
+  function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const brief = {
+      name: String(formData.get("name") ?? ""),
+      email: String(formData.get("email") ?? ""),
+      phone: String(formData.get("tel") ?? ""),
+      projectType: String(formData.get("type") ?? ""),
+      budget: String(formData.get("budget") ?? ""),
+      delay: String(formData.get("delai") ?? ""),
+      message: String(formData.get("message") ?? ""),
+    };
+    window.open(
+      whatsappHref(setting.whatsapp, buildContactMessage(brief)),
+      "_blank",
+      "noopener,noreferrer",
+    );
+    submitContact(formData);
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -123,7 +153,7 @@ export function HomeClient({ data }: { data: HomeData }) {
   function openWhatsapp() {
     if (!choice) return;
     const message = buildAcademyMessage({ ...choice, mode });
-    window.open(whatsappHref(setting.phone, message), "_blank", "noopener,noreferrer");
+    window.open(whatsappHref(setting.whatsapp, message), "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -468,7 +498,7 @@ export function HomeClient({ data }: { data: HomeData }) {
             <div className="clux-right">
               <div className="clux-card">
                 <h3 className="clux-form-ttl">Parlons de votre projet</h3>
-                <form action={submitContact}>
+                <form onSubmit={handleContactSubmit}>
                   <div className="cf-row">
                     <div className="cf-field"><label htmlFor="cf-name">Nom *</label><input id="cf-name" name="name" type="text" placeholder="Votre nom" required /></div>
                     <div className="cf-field"><label htmlFor="cf-email">Email *</label><input id="cf-email" name="email" type="email" placeholder="votre@email.com" required /></div>
@@ -511,9 +541,13 @@ export function HomeClient({ data }: { data: HomeData }) {
                     <textarea id="cf-message" name="message" rows={4} placeholder="Décrivez votre projet, vos objectifs, vos inspirations…" required />
                   </div>
                   <label className="cf-rgpd"><input type="checkbox" name="rgpd" required /><span>J&apos;accepte la politique de confidentialité et le traitement de mes données *</span></label>
-                  <button className="cf-submit" type="submit" disabled={contactPending}>{contactPending ? "ENVOI…" : "ENVOYER"}</button>
+                  <button className="cf-submit" type="submit" disabled={contactPending}>
+                    {contactPending ? "ENVOI…" : "ENVOYER SUR WHATSAPP"}
+                  </button>
                   {contactState?.error && <p className="bo-error">{contactState.error}</p>}
-                  <p className="form-ok" style={{ display: contactState?.ok ? "block" : "none" }}>Demande envoyée. Yohann te répond sous 24 h.</p>
+                  <p className="form-ok" style={{ display: contactState?.ok ? "block" : "none" }}>
+                    Demande enregistrée. Confirme l&apos;envoi dans WhatsApp — réponse sous 24 h.
+                  </p>
                 </form>
               </div>
             </div>

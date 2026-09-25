@@ -37,14 +37,56 @@ export function buildAcademyMessage(choice: AcademyChoice): string {
 }
 
 /**
- * Lien WhatsApp avec message prérempli. Le numéro ne contient que des chiffres.
- * @param phoneDigits Indicatif et numéro, sans espaces.
+ * Lien WhatsApp avec message prérempli.
+ * Accepte un numéro (+225…) ou une URL click-to-chat (wa.me/message/…).
+ * @param phoneOrUrl Numéro ou URL WhatsApp stockée dans les réglages.
  * @param message Texte du message.
- * @returns URL wa.me.
+ * @returns URL wa.me prête à ouvrir.
  */
-export function whatsappHref(phoneDigits: string, message: string): string {
-  const phone = phoneDigits.replace(/\D/g, "");
+export function whatsappHref(phoneOrUrl: string, message: string): string {
+  const trimmed = phoneOrUrl.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const url = new URL(trimmed);
+      url.searchParams.set("text", message);
+      return url.toString();
+    } catch {
+      return `${trimmed}${trimmed.includes("?") ? "&" : "?"}text=${encodeURIComponent(message)}`;
+    }
+  }
+  const phone = trimmed.replace(/\D/g, "");
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+export type ContactBrief = {
+  name: string;
+  email: string;
+  phone: string;
+  projectType: string;
+  budget: string;
+  delay: string;
+  message: string;
+};
+
+/**
+ * Construit le brief contact à préremplir dans WhatsApp.
+ * @param brief Champs du formulaire contact.
+ * @returns Texte prêt pour wa.me.
+ */
+export function buildContactMessage(brief: ContactBrief): string {
+  const lines = [
+    "Bonjour Yohann,",
+    "Nouvelle demande via le site Kya Design :",
+    "",
+    `Nom : ${brief.name.trim()}`,
+    `Email : ${brief.email.trim()}`,
+  ];
+  if (brief.phone.trim()) lines.push(`Téléphone : ${brief.phone.trim()}`);
+  if (brief.projectType.trim()) lines.push(`Type de projet : ${brief.projectType.trim()}`);
+  if (brief.budget.trim()) lines.push(`Budget : ${brief.budget.trim()}`);
+  if (brief.delay.trim()) lines.push(`Délai : ${brief.delay.trim()}`);
+  lines.push("", "Message :", brief.message.trim());
+  return lines.join("\n");
 }
 
 /**
