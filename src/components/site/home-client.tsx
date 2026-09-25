@@ -342,56 +342,54 @@ export function HomeClient({ data }: { data: HomeData }) {
               ))}
             </div>
           ) : null}
+
+          <div className="section-head academy-sub">
+            <div>
+              <p className="kicker">Modalités</p>
+              <h2>Choisissez votre mode de formation</h2>
+            </div>
+          </div>
           {data.modes.length > 0 ? (
-            <>
-              <div className="section-head academy-sub">
-                <div>
-                  <p className="kicker">Modalités</p>
-                  <h2>Choisissez votre mode de formation</h2>
-                </div>
-              </div>
-              <div className="academy-modes">
-                {data.modes.map((item) => (
-                  <article className="academy-mode" key={item.id}>
-                    <img src={item.image} alt="" />
-                    <div>
-                      <h3>{item.title}</h3>
-                      <p>{item.lead}</p>
-                      <p>{item.detail}</p>
-                      <ul>{item.includes.map((line) => <li key={line}>{line}</li>)}</ul>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </>
+            <div className="academy-modes">
+              {data.modes.map((item) => (
+                <article className="academy-mode" key={item.id}>
+                  <img src={item.image} alt="" />
+                  <div>
+                    <h3>{item.title}</h3>
+                    <p>{item.lead}</p>
+                    <p>{item.detail}</p>
+                    <ul>{item.includes.map((line) => <li key={line}>{line}</li>)}</ul>
+                  </div>
+                </article>
+              ))}
+            </div>
           ) : null}
+
+          <div className="section-head academy-sub">
+            <div>
+              <p className="kicker">Parcours</p>
+              <h2>Nos packs de formation</h2>
+            </div>
+            <p style={{ maxWidth: "36ch", color: "var(--muted)" }}>Choisissez le parcours qui correspond à vos objectifs.</p>
+          </div>
           {data.packs.length > 0 ? (
-            <>
-              <div className="section-head academy-sub">
-                <div>
-                  <p className="kicker">Parcours</p>
-                  <h2>Nos packs de formation</h2>
-                </div>
-                <p style={{ maxWidth: "36ch", color: "var(--muted)" }}>Choisissez le parcours qui correspond à vos objectifs.</p>
-              </div>
-              <div className="academy-packs">
-                {data.packs.map((pack, index) => (
-                  <article className={`academy-pack${pack.highlighted ? " is-highlight" : ""}`} style={{ ["--card-idx" as string]: index }} key={pack.id}>
-                    {pack.image ? (
-                      <div className="academy-visual">
-                        <img src={pack.image} alt={pack.title} />
-                      </div>
-                    ) : null}
-                    <div className="academy-body">
-                      <h3>{pack.title}</h3>
-                      <p>{pack.summary}</p>
-                      <ul>{pack.topics.map((topic) => <li key={topic}>{topic}</li>)}</ul>
-                      <button className="btn" type="button" onClick={() => setChoice({ kind: "pack", title: pack.title })}>Choisir ce pack</button>
+            <div className="academy-packs">
+              {data.packs.map((pack, index) => (
+                <article className={`academy-pack${pack.highlighted ? " is-highlight" : ""}`} style={{ ["--card-idx" as string]: index }} key={pack.id}>
+                  {pack.image ? (
+                    <div className="academy-visual">
+                      <img src={pack.image} alt={pack.title} />
                     </div>
-                  </article>
-                ))}
-              </div>
-            </>
+                  ) : null}
+                  <div className="academy-body">
+                    <h3>{pack.title}</h3>
+                    <p>{pack.summary}</p>
+                    <ul>{pack.topics.map((topic) => <li key={topic}>{topic}</li>)}</ul>
+                    <button className="btn" type="button" onClick={() => setChoice({ kind: "pack", title: pack.title })}>Choisir ce pack</button>
+                  </div>
+                </article>
+              ))}
+            </div>
           ) : null}
         </div>
       </section>
