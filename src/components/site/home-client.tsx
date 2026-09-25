@@ -504,33 +504,37 @@ export function HomeClient({ data }: { data: HomeData }) {
                     <div className="cf-field"><label htmlFor="cf-email">Email *</label><input id="cf-email" name="email" type="email" placeholder="votre@email.com" required /></div>
                     <div className="cf-field"><label htmlFor="cf-tel">Téléphone</label><input id="cf-tel" name="tel" type="tel" placeholder="+225 …" /></div>
                     <div className="cf-field">
-                      <label htmlFor="cf-type">Type de projet</label>
+                      <label htmlFor="cf-type">Type de projet *</label>
                       <div className="cf-select-wrap">
-                        <select id="cf-type" name="type" defaultValue="">
-                          <option value="">Identité visuelle / logos</option>
-                          <option>Création d&apos;affiches</option>
-                          <option>Identité visuelle / logos</option>
-                          <option>Réseaux sociaux</option>
-                          <option>Flyers et brochures</option>
-                          <option>Packaging</option>
-                          <option>Mockups</option>
-                          <option>Communication publicitaire</option>
-                          <option>Retouche et photomontage</option>
-                          <option>Photographie</option>
-                          <option>Captation vidéo</option>
+                        <select id="cf-type" name="type" defaultValue="" required>
+                          <option value="" disabled>
+                            Sélectionner…
+                          </option>
+                          <option value="Création d'affiches">Création d&apos;affiches</option>
+                          <option value="Identité visuelle / logos">Identité visuelle / logos</option>
+                          <option value="Réseaux sociaux">Réseaux sociaux</option>
+                          <option value="Flyers et brochures">Flyers et brochures</option>
+                          <option value="Packaging">Packaging</option>
+                          <option value="Mockups">Mockups</option>
+                          <option value="Communication publicitaire">Communication publicitaire</option>
+                          <option value="Retouche et photomontage">Retouche et photomontage</option>
+                          <option value="Photographie">Photographie</option>
+                          <option value="Captation vidéo">Captation vidéo</option>
                         </select>
                       </div>
                     </div>
                     <div className="cf-field">
-                      <label htmlFor="cf-budget">Budget estimé</label>
+                      <label htmlFor="cf-budget">Budget estimé *</label>
                       <div className="cf-select-wrap">
-                        <select id="cf-budget" name="budget" defaultValue="">
-                          <option value="">Sélectionner…</option>
-                          <option>100–300k FCFA</option>
-                          <option>300k–1M FCFA</option>
-                          <option>1M–5M FCFA</option>
-                          <option>5M+ FCFA</option>
-                          <option>À discuter</option>
+                        <select id="cf-budget" name="budget" defaultValue="" required>
+                          <option value="" disabled>
+                            Sélectionner…
+                          </option>
+                          <option value="100–300k FCFA">100–300k FCFA</option>
+                          <option value="300k–1M FCFA">300k–1M FCFA</option>
+                          <option value="1M–5M FCFA">1M–5M FCFA</option>
+                          <option value="5M+ FCFA">5M+ FCFA</option>
+                          <option value="À discuter">À discuter</option>
                         </select>
                       </div>
                     </div>
