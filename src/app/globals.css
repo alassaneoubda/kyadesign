@@ -576,11 +576,16 @@ h3,
   text-transform: uppercase;
 }
 
-.filter.is-on,
-.filter:hover {
+.filter.is-on {
   border-color: var(--red);
   color: #111;
   background: var(--red);
+}
+
+.filter:hover:not(.is-on) {
+  border-color: var(--red);
+  color: var(--fg);
+  background: transparent;
 }
 
 .grid {

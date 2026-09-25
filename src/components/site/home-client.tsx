@@ -80,23 +80,42 @@ export function HomeClient({ data }: { data: HomeData }) {
       node.classList.contains("card")
         ? "is-visible"
         : "is-in";
+
+    const revealNow = (node: Element) => {
+      node.classList.add(revealClass(node));
+    };
+
     if (!("IntersectionObserver" in window) || prefersReducedMotion()) {
-      nodes.forEach((node) => node.classList.add(revealClass(node)));
+      nodes.forEach(revealNow);
       return;
     }
+
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
-          entry.target.classList.add(revealClass(entry.target));
+          revealNow(entry.target);
           io.unobserve(entry.target);
         });
       },
-      { threshold: 0.12 }
+      { threshold: 0.08, rootMargin: "0px 0px 80px 0px" }
     );
-    nodes.forEach((node) => io.observe(node));
+
+    nodes.forEach((node) => {
+      // Après un filtre, les cartes sont recréées : les rendre visibles si déjà à l'écran.
+      if (node.classList.contains("card")) {
+        const rect = node.getBoundingClientRect();
+        const inView = rect.top < window.innerHeight && rect.bottom > 0;
+        if (inView) {
+          revealNow(node);
+          return;
+        }
+      }
+      io.observe(node);
+    });
+
     return () => io.disconnect();
-  }, [data]);
+  }, [data, category]);
 
   const projects = data.projects.filter((project) => category === "all" || project.categoryId === category);
   const categoryLabel = (id: string) => data.categories.find((item) => item.id === id)?.label ?? id;
