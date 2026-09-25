@@ -7,10 +7,11 @@ import { prisma } from "@/lib/prisma";
 import { cookieNames, credentialsMatch, getAdminSession, signAdminToken, signGuestToken } from "@/lib/auth";
 import { createAccessCode, isAccessCode, normalizeCode } from "@/lib/codes";
 import { logInfo } from "@/lib/log";
-import { savePublicImage } from "@/lib/storage";
+import { savePublicImage, saveSoftwareIcon, saveCvPdf } from "@/lib/storage";
 import { sendContactMail } from "@/lib/mail";
 import {
   albumSchema,
+  categorySchema,
   checked,
   contactSchema,
   formationSchema,
@@ -18,6 +19,7 @@ import {
   projectSchema,
   serviceSchema,
   settingsSchema,
+  softwareSchema,
   topicsToJson,
 } from "@/lib/validators";
 
@@ -346,6 +348,55 @@ export async function deleteServiceAction(formData: FormData): Promise<void> {
   redirect("/admin/services");
 }
 
+/**
+ * Crée ou met à jour un logiciel (nom, jauge %, icône).
+ * @param formData Formulaire back-office.
+ */
+export async function saveSoftwareAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const parsed = softwareSchema.safeParse({
+    name: formData.get("name"),
+    level: formData.get("level"),
+    sortOrder: formData.get("sortOrder") || 0,
+  });
+  if (!parsed.success) redirect("/admin/logiciels?erreur=1");
+  const id = String(formData.get("id") ?? "");
+  const iconFile = formData.get("icon");
+  let icon: string | null = null;
+  try {
+    icon = iconFile instanceof File ? await saveSoftwareIcon(iconFile) : null;
+  } catch {
+    redirect("/admin/logiciels?erreur=1");
+  }
+  if (!id && !icon) redirect("/admin/logiciels?erreur=1");
+  if (id) {
+    await prisma.software.update({
+      where: { id },
+      data: { ...parsed.data, ...(icon ? { icon } : {}) },
+    });
+  } else {
+    await prisma.software.create({
+      data: { ...parsed.data, icon: icon as string },
+    });
+  }
+  logInfo("software.save", { name: parsed.data.name });
+  revalidatePath("/");
+  redirect("/admin/logiciels");
+}
+
+/**
+ * Supprime un logiciel de la section outils.
+ * @param formData Contient l'id.
+ */
+export async function deleteSoftwareAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (id) await prisma.software.delete({ where: { id } });
+  logInfo("software.delete", { id });
+  revalidatePath("/");
+  redirect("/admin/logiciels");
+}
+
 export async function deleteProjectImageAction(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
@@ -402,13 +453,92 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
     tiktokHandle: formData.get("tiktokHandle"),
     behance: formData.get("behance"),
     behanceHandle: formData.get("behanceHandle"),
+    linkedin: formData.get("linkedin") || "",
+    linkedinHandle: formData.get("linkedinHandle") || "",
     aboutIntro: formData.get("aboutIntro"),
     aboutApproach: formData.get("aboutApproach"),
     aboutExperience: formData.get("aboutExperience"),
     contactLocation: formData.get("contactLocation"),
   });
   if (!parsed.success) redirect("/admin/reglages?erreur=1");
-  await prisma.siteSetting.update({ where: { id: 1 }, data: parsed.data });
+
+  const heroFile = formData.get("heroImage");
+  const portraitFile = formData.get("portraitImage");
+  const cvFile = formData.get("cvFile");
+
+  let heroImage: string | null = null;
+  let portraitImage: string | null = null;
+  let cvFileName: string | null = null;
+  try {
+    heroImage =
+      heroFile instanceof File && heroFile.size > 0
+        ? await savePublicImage(heroFile, "brand", { compress: true })
+        : null;
+    portraitImage =
+      portraitFile instanceof File && portraitFile.size > 0
+        ? await savePublicImage(portraitFile, "brand", { compress: true })
+        : null;
+    cvFileName = cvFile instanceof File && cvFile.size > 0 ? await saveCvPdf(cvFile) : null;
+  } catch {
+    redirect("/admin/reglages?erreur=1");
+  }
+
+  await prisma.siteSetting.update({
+    where: { id: 1 },
+    data: {
+      ...parsed.data,
+      ...(heroImage ? { heroImage } : {}),
+      ...(portraitImage ? { portraitImage } : {}),
+      ...(cvFileName ? { cvFileName } : {}),
+    },
+  });
+  logInfo("settings.save");
   revalidatePath("/");
   redirect("/admin/reglages?ok=1");
+}
+
+/**
+ * Crée ou met à jour une catégorie de réalisations.
+ * @param formData Formulaire back-office.
+ */
+export async function saveCategoryAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const parsed = categorySchema.safeParse({
+    id: formData.get("id"),
+    label: formData.get("label"),
+    sortOrder: formData.get("sortOrder") || 0,
+  });
+  if (!parsed.success) redirect("/admin/categories?erreur=1");
+  if (parsed.data.id === "all") redirect("/admin/categories?erreur=1");
+
+  const existingId = String(formData.get("existingId") ?? "");
+  if (existingId && existingId !== "all") {
+    await prisma.category.update({
+      where: { id: existingId },
+      data: { label: parsed.data.label, sortOrder: parsed.data.sortOrder },
+    });
+  } else {
+    const exists = await prisma.category.findUnique({ where: { id: parsed.data.id } });
+    if (exists) redirect("/admin/categories?erreur=1");
+    await prisma.category.create({ data: parsed.data });
+  }
+  logInfo("category.save", { id: parsed.data.id });
+  revalidatePath("/");
+  redirect("/admin/categories");
+}
+
+/**
+ * Supprime une catégorie (sauf « Tous »). Refuse si des projets y sont liés.
+ * @param formData Contient l'id.
+ */
+export async function deleteCategoryAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id || id === "all") redirect("/admin/categories");
+  const used = await prisma.project.count({ where: { categoryId: id } });
+  if (used > 0) redirect("/admin/categories?erreur=liee");
+  await prisma.category.delete({ where: { id } });
+  logInfo("category.delete", { id });
+  revalidatePath("/");
+  redirect("/admin/categories");
 }

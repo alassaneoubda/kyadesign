@@ -21,7 +21,8 @@ const SOFTWARE_LOGOS: Record<string, string> = {
   figma: "/assets/software/figma.svg",
 };
 
-function softwareLogo(name: string): string | null {
+function softwareLogo(name: string, icon?: string): string | null {
+  if (icon) return icon;
   return SOFTWARE_LOGOS[name.trim().toLowerCase()] ?? null;
 }
 
@@ -194,9 +195,6 @@ export function HomeClient({ data }: { data: HomeData }) {
               <p className="kicker">03 — Portfolio</p>
               <h2>Mes réalisations</h2>
             </div>
-            <p style={{ maxWidth: "36ch", color: "var(--muted)" }}>
-              Clique une pièce pour l’étude de projet : problème, concept, création, résultat.
-            </p>
           </div>
           {data.projects.length > 0 ? (
             <>
@@ -219,11 +217,7 @@ export function HomeClient({ data }: { data: HomeData }) {
                 ))}
               </div>
             </>
-          ) : (
-            <p style={{ color: "var(--muted)", maxWidth: "48ch" }}>
-              Les prochaines réalisations seront publiées ici depuis le back-office.
-            </p>
-          )}
+          ) : null}
           <a className="btn lock-note" href="/galerie">Accès client — albums privés</a>
         </div>
       </section>
@@ -268,7 +262,7 @@ export function HomeClient({ data }: { data: HomeData }) {
           </div>
           <div className="soft">
             {data.software.map((item) => {
-              const logo = softwareLogo(item.name);
+              const logo = softwareLogo(item.name, item.icon);
               return (
                 <div className="soft-row" key={item.id}>
                   <div className="soft-name">
@@ -328,66 +322,58 @@ export function HomeClient({ data }: { data: HomeData }) {
                 </article>
               ))}
             </div>
-          ) : (
-            <p style={{ color: "var(--muted)", maxWidth: "48ch", marginBottom: "2rem" }}>
-              Les formations seront ajoutées ici depuis le back-office.
-            </p>
-          )}
-          <div className="section-head academy-sub">
-            <div>
-              <p className="kicker">Modalités</p>
-              <h2>Choisissez votre mode de formation</h2>
-            </div>
-          </div>
+          ) : null}
           {data.modes.length > 0 ? (
-            <div className="academy-modes">
-              {data.modes.map((item) => (
-                <article className="academy-mode" key={item.id}>
-                  <img src={item.image} alt="" />
-                  <div>
-                    <h3>{item.title}</h3>
-                    <p>{item.lead}</p>
-                    <p>{item.detail}</p>
-                    <ul>{item.includes.map((line) => <li key={line}>{line}</li>)}</ul>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p style={{ color: "var(--muted)", maxWidth: "48ch", marginBottom: "2rem" }}>
-              Les modalités (en ligne / présentiel) seront publiées ici.
-            </p>
-          )}
-          <div className="section-head academy-sub">
-            <div>
-              <p className="kicker">Parcours</p>
-              <h2>Nos packs de formation</h2>
-            </div>
-            <p style={{ maxWidth: "36ch", color: "var(--muted)" }}>Choisissez le parcours qui correspond à vos objectifs.</p>
-          </div>
-          {data.packs.length > 0 ? (
-            <div className="academy-packs">
-              {data.packs.map((pack, index) => (
-                <article className={`academy-pack${pack.highlighted ? " is-highlight" : ""}`} style={{ ["--card-idx" as string]: index }} key={pack.id}>
-                  {pack.image ? (
-                    <div className="academy-visual">
-                      <img src={pack.image} alt={pack.title} />
+            <>
+              <div className="section-head academy-sub">
+                <div>
+                  <p className="kicker">Modalités</p>
+                  <h2>Choisissez votre mode de formation</h2>
+                </div>
+              </div>
+              <div className="academy-modes">
+                {data.modes.map((item) => (
+                  <article className="academy-mode" key={item.id}>
+                    <img src={item.image} alt="" />
+                    <div>
+                      <h3>{item.title}</h3>
+                      <p>{item.lead}</p>
+                      <p>{item.detail}</p>
+                      <ul>{item.includes.map((line) => <li key={line}>{line}</li>)}</ul>
                     </div>
-                  ) : null}
-                  <div className="academy-body">
-                    <h3>{pack.title}</h3>
-                    <p>{pack.summary}</p>
-                    <ul>{pack.topics.map((topic) => <li key={topic}>{topic}</li>)}</ul>
-                    <button className="btn" type="button" onClick={() => setChoice({ kind: "pack", title: pack.title })}>Choisir ce pack</button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p style={{ color: "var(--muted)", maxWidth: "48ch" }}>
-              Les packs de formation seront ajoutés ici depuis le back-office.
-            </p>
-          )}
+                  </article>
+                ))}
+              </div>
+            </>
+          ) : null}
+          {data.packs.length > 0 ? (
+            <>
+              <div className="section-head academy-sub">
+                <div>
+                  <p className="kicker">Parcours</p>
+                  <h2>Nos packs de formation</h2>
+                </div>
+                <p style={{ maxWidth: "36ch", color: "var(--muted)" }}>Choisissez le parcours qui correspond à vos objectifs.</p>
+              </div>
+              <div className="academy-packs">
+                {data.packs.map((pack, index) => (
+                  <article className={`academy-pack${pack.highlighted ? " is-highlight" : ""}`} style={{ ["--card-idx" as string]: index }} key={pack.id}>
+                    {pack.image ? (
+                      <div className="academy-visual">
+                        <img src={pack.image} alt={pack.title} />
+                      </div>
+                    ) : null}
+                    <div className="academy-body">
+                      <h3>{pack.title}</h3>
+                      <p>{pack.summary}</p>
+                      <ul>{pack.topics.map((topic) => <li key={topic}>{topic}</li>)}</ul>
+                      <button className="btn" type="button" onClick={() => setChoice({ kind: "pack", title: pack.title })}>Choisir ce pack</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </>
+          ) : null}
         </div>
       </section>
 
@@ -399,10 +385,53 @@ export function HomeClient({ data }: { data: HomeData }) {
               <h2 className="clux-h2">Travaillons<br />ensemble</h2>
               <p className="clux-sub">Un brief, une identité, une campagne. Écris-moi.</p>
               <ul className="clux-infos">
-                <li className="cli"><span className="cli-ico" aria-hidden="true" /><span className="cli-body"><span className="cli-lbl">Email</span><a className="cli-val" href={`mailto:${setting.email}`}>{setting.email}</a></span></li>
-                <li className="cli"><span className="cli-ico" aria-hidden="true" /><span className="cli-body"><span className="cli-lbl">Téléphone</span><a className="cli-val" href={`tel:${setting.phone.replace(/\s/g, "")}`}>{setting.phone}</a></span></li>
-                <li className="cli"><span className="cli-ico cli-ico--wa" aria-hidden="true" /><span className="cli-body"><span className="cli-lbl">WhatsApp</span><a className="cli-val" href={setting.whatsapp} target="_blank" rel="noopener noreferrer">{setting.whatsappDisplay}</a></span></li>
-                <li className="cli"><span className="cli-ico" aria-hidden="true" /><span className="cli-body"><span className="cli-lbl">Localisation</span><span className="cli-val">{setting.contactLocation}</span></span></li>
+                <li className="cli">
+                  <span className="cli-ico" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="m2 7 10 7 10-7" />
+                    </svg>
+                  </span>
+                  <span className="cli-body">
+                    <span className="cli-lbl">Email</span>
+                    <a className="cli-val" href={`mailto:${setting.email}`}>{setting.email}</a>
+                  </span>
+                </li>
+                <li className="cli">
+                  <span className="cli-ico" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.37 2 2 0 0 1 3.62 1.18h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6 6l1.86-1.86a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 15z" />
+                    </svg>
+                  </span>
+                  <span className="cli-body">
+                    <span className="cli-lbl">Téléphone</span>
+                    <a className="cli-val" href={`tel:${setting.phone.replace(/\s/g, "")}`}>{setting.phone}</a>
+                  </span>
+                </li>
+                <li className="cli">
+                  <span className="cli-ico cli-ico--wa" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                      <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.12 1.535 5.845L.057 23.448a.5.5 0 0 0 .61.61l5.603-1.478A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.9a9.878 9.878 0 0 1-5.032-1.376l-.36-.214-3.733.984.993-3.63-.234-.373A9.87 9.87 0 0 1 2.1 12C2.1 6.532 6.532 2.1 12 2.1c5.468 0 9.9 4.432 9.9 9.9 0 5.468-4.432 9.9-9.9 9.9z" />
+                    </svg>
+                  </span>
+                  <span className="cli-body">
+                    <span className="cli-lbl">WhatsApp</span>
+                    <a className="cli-val" href={setting.whatsapp} target="_blank" rel="noopener noreferrer">{setting.whatsappDisplay}</a>
+                  </span>
+                </li>
+                <li className="cli">
+                  <span className="cli-ico" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </span>
+                  <span className="cli-body">
+                    <span className="cli-lbl">Localisation</span>
+                    <span className="cli-val">{setting.contactLocation}</span>
+                  </span>
+                </li>
               </ul>
               <hr className="clux-sep" />
               <div className="clux-social">
@@ -411,6 +440,11 @@ export function HomeClient({ data }: { data: HomeData }) {
                   <a className="csoc" href={setting.instagram} target="_blank" rel="noopener noreferrer"><span>Instagram · <em>{setting.instagramHandle}</em></span></a>
                   <a className="csoc" href={setting.tiktok} target="_blank" rel="noopener noreferrer"><span>TikTok · <em>{setting.tiktokHandle}</em></span></a>
                   <a className="csoc" href={setting.behance} target="_blank" rel="noopener noreferrer"><span>Behance · <em>{setting.behanceHandle}</em></span></a>
+                  {setting.linkedin ? (
+                    <a className="csoc" href={setting.linkedin} target="_blank" rel="noopener noreferrer">
+                      <span>LinkedIn · <em>{setting.linkedinHandle || "LinkedIn"}</em></span>
+                    </a>
+                  ) : null}
                 </div>
               </div>
             </div>

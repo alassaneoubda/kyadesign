@@ -60,6 +60,23 @@ export const serviceSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).max(999),
 });
 
+export const softwareSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  level: z.coerce.number().int().min(0).max(100),
+  sortOrder: z.coerce.number().int().min(0).max(999),
+});
+
+export const categorySchema = z.object({
+  id: z
+    .string()
+    .trim()
+    .min(2)
+    .max(40)
+    .regex(/^[a-z0-9-]+$/, "Identifiant en minuscules, sans espace (ex: identite-visuelle)."),
+  label: z.string().trim().min(2).max(80),
+  sortOrder: z.coerce.number().int().min(0).max(999),
+});
+
 export const settingsSchema = z.object({
   aboutName: z.string().trim().min(2).max(80),
   aboutRole: z.string().trim().min(2).max(160),
@@ -74,6 +91,8 @@ export const settingsSchema = z.object({
   tiktokHandle: z.string().trim().min(1).max(80),
   behance: z.string().trim().url(),
   behanceHandle: z.string().trim().min(1).max(80),
+  linkedin: z.union([z.literal(""), z.string().trim().url()]),
+  linkedinHandle: z.string().trim().max(80),
   aboutIntro: z.string().trim().min(10).max(800),
   aboutApproach: z.string().trim().min(10).max(800),
   aboutExperience: z.string().trim().min(10).max(800),

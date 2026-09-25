@@ -28,6 +28,8 @@ model SiteSetting {
   tiktokHandle     String
   behance          String
   behanceHandle    String
+  linkedin         String @default("")
+  linkedinHandle   String @default("")
   aboutIntro       String
   aboutApproach    String
   aboutExperience  String
@@ -55,6 +57,7 @@ model Software {
   id        String @id @default(cuid())
   name      String
   level     Int
+  icon      String @default("")
   sortOrder Int
 }
 

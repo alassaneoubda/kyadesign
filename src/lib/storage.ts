@@ -180,19 +180,74 @@ export async function deleteAlbumFiles(albumId: string): Promise<void> {
   }
 }
 
-export function cvAbsolutePath(): string {
-  const name = process.env.CV_FILE_NAME || "CV_Yohann_Armel_K.pdf";
+export function cvAbsolutePath(fileName?: string): string {
+  const name = fileName || process.env.CV_FILE_NAME || "CV_Yohann_Armel_K.pdf";
   return path.join(process.cwd(), "storage", "cv", name);
 }
 
-export function cvObjectKey(): string {
-  const name = process.env.CV_FILE_NAME || "CV_Yohann_Armel_K.pdf";
+export function cvObjectKey(fileName?: string): string {
+  const name = fileName || process.env.CV_FILE_NAME || "CV_Yohann_Armel_K.pdf";
   return r2CvKey(name);
+}
+
+/**
+ * Enregistre un PDF de CV (R2 ou disque local).
+ * @param file Fichier PDF du formulaire.
+ * @returns Nom de fichier stocké.
+ */
+export async function saveCvPdf(file: File): Promise<string> {
+  if (!file || file.size === 0) throw new Error("Fichier CV manquant.");
+  if (file.size > 15 * 1024 * 1024) throw new Error("CV trop lourd. Maximum 15 Mo.");
+  const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  if (!isPdf) throw new Error("Le CV doit être un fichier PDF.");
+  const safeName =
+    file.name.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/_+/g, "_").slice(0, 100) ||
+    `CV_${randomUUID()}.pdf`;
+  const bytes = Buffer.from(await file.arrayBuffer());
+
+  if (isR2Configured()) {
+    await r2Put(r2CvKey(safeName), bytes, "application/pdf");
+  } else {
+    const dir = path.join(process.cwd(), "storage", "cv");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, safeName), bytes);
+  }
+  return safeName;
 }
 
 export function contentTypeFor(ext: string): string {
   if (ext === ".png") return "image/png";
   if (ext === ".webp") return "image/webp";
+  if (ext === ".svg") return "image/svg+xml";
   if (ext === ".tif" || ext === ".tiff") return "image/tiff";
   return "image/jpeg";
+}
+
+/**
+ * Enregistre une icône de logiciel (SVG/PNG/JPG/WEBP, sans recompression).
+ * @param file Fichier du formulaire.
+ * @returns Chemin public via l'API, ou null si vide.
+ */
+export async function saveSoftwareIcon(file: File): Promise<string | null> {
+  if (!file || file.size === 0) return null;
+  if (file.size > 2 * 1024 * 1024) throw new Error("Icône trop lourde. Maximum 2 Mo.");
+  let ext = path.extname(file.name).toLowerCase();
+  if (file.type === "image/svg+xml") ext = ".svg";
+  if (![".svg", ".png", ".jpg", ".jpeg", ".webp"].includes(ext)) {
+    throw new Error("Format icône accepté : SVG, PNG, JPG ou WEBP.");
+  }
+  if (ext === ".jpeg") ext = ".jpg";
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const filename = `${randomUUID()}${ext}`;
+  const contentType = contentTypeFor(ext);
+
+  if (isR2Configured()) {
+    await r2Put(r2UploadKey("software", filename), bytes, contentType);
+  } else {
+    const dir = path.join(process.cwd(), "storage", "uploads", "software");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, filename), bytes);
+  }
+
+  return `/api/uploads/software/${filename}`;
 }

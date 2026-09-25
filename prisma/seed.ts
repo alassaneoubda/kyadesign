@@ -13,7 +13,7 @@ async function main() {
       personName: "Yohann Armel Koukoui",
       aboutName: "Yohann Armel",
       aboutRole: "Graphiste & Directeur Créatif — KYA Design",
-      footerLine: "Yohann Armel Koukoui — Designer graphique",
+      footerLine: "Yohann Armel — Designer graphique",
       phone: "+225 05 64 36 95 54",
       whatsapp: "https://wa.me/message/ZHWZ6LIES7PRF1",
       whatsappDisplay: "+225 05 64 36 95 54 · Disponible sur WhatsApp",
@@ -24,6 +24,8 @@ async function main() {
       tiktokHandle: "kyadesign0",
       behance: "https://www.behance.net/yohannkoukoui1",
       behanceHandle: "yohann armel koukoui",
+      linkedin: "https://www.linkedin.com/in/yohann-armel-koukoui-77b2643b6",
+      linkedinHandle: "Yohann Armel Koukoui",
       aboutIntro:
         "Yohann Armel, graphiste et directeur créatif derrière KYA Design. Je conçois des identités, des campagnes et des supports qui donnent une présence nette aux marques — du premier regard jusqu’au dernier détail.",
       aboutApproach:
@@ -60,12 +62,12 @@ async function main() {
 
   await prisma.software.createMany({
     data: [
-      { name: "Photoshop", level: 95, sortOrder: 1 },
-      { name: "Illustrator", level: 95, sortOrder: 2 },
-      { name: "After Effects", level: 80, sortOrder: 3 },
-      { name: "Premiere Pro", level: 78, sortOrder: 4 },
-      { name: "InDesign", level: 85, sortOrder: 5 },
-      { name: "Figma", level: 70, sortOrder: 6 },
+      { name: "Photoshop", level: 95, sortOrder: 1, icon: "/assets/software/photoshop.svg" },
+      { name: "Illustrator", level: 95, sortOrder: 2, icon: "/assets/software/illustrator.svg" },
+      { name: "After Effects", level: 80, sortOrder: 3, icon: "/assets/software/after-effects.svg" },
+      { name: "Premiere Pro", level: 78, sortOrder: 4, icon: "/assets/software/premiere-pro.svg" },
+      { name: "InDesign", level: 85, sortOrder: 5, icon: "/assets/software/indesign.svg" },
+      { name: "Figma", level: 70, sortOrder: 6, icon: "/assets/software/figma.svg" },
     ],
   });
 
