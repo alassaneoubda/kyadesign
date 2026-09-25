@@ -21,6 +21,10 @@ export const metadata: Metadata = {
     "formation design",
   ],
   authors: [{ name: "Yohann Armel Koukoui" }],
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+  },
   openGraph: {
     type: "website",
     locale: "fr_CI",
