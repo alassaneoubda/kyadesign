@@ -1,0 +1,40 @@
+{
+  "name": "kya-design",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:setup": "prisma db push && tsx prisma/seed.ts",
+    "test": "tsx --test src/lib/academy.test.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "archiver": "^7.0.1",
+    "bcryptjs": "^2.4.3",
+    "jose": "^6.1.0",
+    "jszip": "^3.10.1",
+    "next": "16.3.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sharp": "^0.34.4",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/archiver": "^6.0.3",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "prisma": "^6.16.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5"
+  }
+}

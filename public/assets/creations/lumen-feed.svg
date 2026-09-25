@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 2000" fill="none">
+  <rect width="1600" height="2000" fill="#0a0a0a"/>
+  <rect x="80" y="200" width="460" height="460" fill="#1a1a1a"/>
+  <rect x="570" y="200" width="460" height="460" fill="#e11d2e"/>
+  <rect x="1060" y="200" width="460" height="460" fill="#1a1a1a"/>
+  <rect x="80" y="690" width="460" height="460" fill="#f4f4f4"/>
+  <rect x="570" y="690" width="460" height="460" fill="#1a1a1a"/>
+  <rect x="1060" y="690" width="460" height="460" fill="#1a1a1a"/>
+  <rect x="80" y="1180" width="460" height="460" fill="#1a1a1a"/>
+  <rect x="570" y="1180" width="460" height="460" fill="#1a1a1a"/>
+  <rect x="1060" y="1180" width="460" height="460" fill="#f4f4f4"/>
+  <text x="80" y="1900" fill="#888" font-family="Arial" font-size="20" letter-spacing="8">FEED SYSTEM</text>
+</svg>

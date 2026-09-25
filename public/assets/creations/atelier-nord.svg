@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 2000" fill="none">
+  <rect width="1600" height="2000" fill="#161616"/>
+  <rect x="200" y="280" width="1200" height="1440" stroke="#f4f4f4" stroke-width="1.5"/>
+  <text x="800" y="980" text-anchor="middle" fill="#f4f4f4" font-family="Arial" font-size="72" letter-spacing="20">NORD</text>
+  <text x="800" y="1060" text-anchor="middle" fill="#e11d2e" font-family="Arial" font-size="18" letter-spacing="14">ATELIER</text>
+</svg>

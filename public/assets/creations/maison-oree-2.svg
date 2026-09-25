@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 2000" fill="none">
+  <rect width="1600" height="2000" fill="#111"/>
+  <circle cx="800" cy="900" r="280" stroke="#f4f4f4" stroke-width="2"/>
+  <circle cx="800" cy="900" r="8" fill="#e11d2e"/>
+  <text x="800" y="910" text-anchor="middle" fill="#f4f4f4" font-family="Georgia, serif" font-size="64" font-style="italic">M</text>
+  <text x="800" y="1560" text-anchor="middle" fill="#8a8a8a" font-family="Arial" font-size="20" letter-spacing="10">MONOGRAMME</text>
+</svg>

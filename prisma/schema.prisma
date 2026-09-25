@@ -1,0 +1,188 @@
+// Kya Design — schéma du contenu piloté par le back-office.
+// Auteur : Yohann Armel Koukoui / Kya Design — 2026-09-23 — v1
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model SiteSetting {
+  id               Int    @id @default(1)
+  brand            String
+  personName       String
+  aboutName        String
+  aboutRole        String
+  footerLine       String
+  phone            String
+  whatsapp         String
+  whatsappDisplay  String
+  email            String
+  instagram        String
+  instagramHandle  String
+  tiktok           String
+  tiktokHandle     String
+  behance          String
+  behanceHandle    String
+  aboutIntro       String
+  aboutApproach    String
+  aboutExperience  String
+  heroImage        String
+  portraitImage    String
+  logoImage        String
+  contactLocation  String
+  cvFileName       String
+}
+
+model Fact {
+  id        String @id @default(cuid())
+  value     String
+  label     String
+  sortOrder Int
+}
+
+model Skill {
+  id        String @id @default(cuid())
+  label     String
+  sortOrder Int
+}
+
+model Software {
+  id        String @id @default(cuid())
+  name      String
+  level     Int
+  sortOrder Int
+}
+
+model Service {
+  id        String @id @default(cuid())
+  number    String
+  title     String
+  text      String
+  image     String
+  sortOrder Int
+}
+
+model Category {
+  id        String @id
+  label     String
+  sortOrder Int
+}
+
+model Client {
+  id        String @id @default(cuid())
+  name      String
+  sector    String
+  sortOrder Int
+}
+
+model Project {
+  id         String         @id
+  title      String
+  categoryId String
+  year       String
+  clientName String
+  role       String
+  cover      String
+  featured   Boolean        @default(false)
+  tags       String
+  probleme   String
+  concept    String
+  creation   String
+  resultat   String
+  sortOrder  Int
+  images     ProjectImage[]
+}
+
+model ProjectImage {
+  id        String  @id @default(cuid())
+  projectId String
+  src       String
+  sortOrder Int
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Formation {
+  id        String   @id @default(cuid())
+  title     String
+  summary   String
+  topics    String
+  image     String
+  published Boolean  @default(true)
+  sortOrder Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Pack {
+  id          String   @id @default(cuid())
+  title       String
+  summary     String
+  topics      String
+  image       String   @default("")
+  highlighted Boolean  @default(false)
+  published   Boolean  @default(true)
+  sortOrder   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TrainingMode {
+  id        String @id
+  title     String
+  lead      String
+  detail    String
+  includes  String
+  image     String
+  sortOrder Int
+}
+
+model Album {
+  id          String       @id @default(cuid())
+  title       String
+  persons     String       @default("")
+  eventDate   String       @default("")
+  eventType   String       @default("Cérémonie")
+  place       String       @default("")
+  description String       @default("")
+  accessCode  String       @unique
+  maxPhotos   Int          @default(200)
+  cover       String       @default("")
+  published   Boolean      @default(true)
+  kind        String       @default("gallery")
+  probleme    String       @default("")
+  concept     String       @default("")
+  creation    String       @default("")
+  resultat    String       @default("")
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  photos      AlbumPhoto[]
+}
+
+model ContactRequest {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  phone       String   @default("")
+  projectType String   @default("")
+  budget      String   @default("")
+  delay       String   @default("")
+  message     String
+  emailSent   Boolean  @default(false)
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model AlbumPhoto {
+  id           String @id @default(cuid())
+  albumId      String
+  originalName String
+  ext          String
+  bytes        Int
+  sortOrder    Int
+  album        Album  @relation(fields: [albumId], references: [id], onDelete: Cascade)
+}
