@@ -38,6 +38,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
+    "png-to-ico": "^3.0.2",
     "prisma": "^6.16.2",
     "tsx": "^4.20.5",
     "typescript": "^5"
