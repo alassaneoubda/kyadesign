@@ -43,6 +43,7 @@ export function HomeClient({ data }: { data: HomeData }) {
   const [choice, setChoice] = useState<Choice>(null);
   const [mode, setMode] = useState(data.modes[0]?.title ?? "En ligne");
   const [contactState, submitContact, contactPending] = useActionState(submitContactAction, null);
+  const [rgpdAccepted, setRgpdAccepted] = useState(false);
   const year = new Date().getFullYear();
 
   /**
@@ -51,8 +52,10 @@ export function HomeClient({ data }: { data: HomeData }) {
    */
   function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!rgpdAccepted) return;
     const form = event.currentTarget;
     const formData = new FormData(form);
+    formData.set("rgpd", "on");
     const brief = {
       name: String(formData.get("name") ?? ""),
       email: String(formData.get("email") ?? ""),
@@ -551,7 +554,17 @@ export function HomeClient({ data }: { data: HomeData }) {
                     <label htmlFor="cf-message">Message — Ton projet *</label>
                     <textarea id="cf-message" name="message" rows={4} placeholder="Décrivez votre projet, vos objectifs, vos inspirations…" required />
                   </div>
-                  <label className="cf-rgpd"><input type="checkbox" name="rgpd" required /><span>J&apos;accepte la politique de confidentialité et le traitement de mes données *</span></label>
+                  <label className="cf-rgpd" htmlFor="cf-rgpd">
+                    <input
+                      id="cf-rgpd"
+                      type="checkbox"
+                      name="rgpd"
+                      checked={rgpdAccepted}
+                      onChange={(event) => setRgpdAccepted(event.target.checked)}
+                      required
+                    />
+                    <span>J&apos;accepte la politique de confidentialité et le traitement de mes données *</span>
+                  </label>
                   <button className="cf-submit" type="submit" disabled={contactPending}>
                     {contactPending ? "ENVOI…" : "ENVOYER SUR WHATSAPP"}
                   </button>

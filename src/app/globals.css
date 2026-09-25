@@ -1071,7 +1071,7 @@ a.cli-val:hover {
 }
 
 /* Override global input/textarea styles inside clux-card */
-.clux-card input,
+.clux-card input:not([type="checkbox"]),
 .clux-card textarea,
 .clux-card select {
   background: var(--cf-input-bg);
@@ -1088,7 +1088,7 @@ a.cli-val:hover {
   appearance: none;
 }
 
-.clux-card input:focus,
+.clux-card input:not([type="checkbox"]):focus,
 .clux-card textarea:focus,
 .clux-card select:focus {
   border-color: var(--gold-line);
@@ -1169,26 +1169,32 @@ a.cli-val:hover {
 .cf-rgpd {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
   margin-bottom: 20px;
   font-size: 0.8rem;
   color: #7a756e;
   line-height: 1.4;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .cf-rgpd input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
+  -webkit-appearance: checkbox;
+  appearance: auto;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  max-width: 22px;
+  margin: 0;
+  margin-top: 1px;
+  padding: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--gold);
   border: 1px solid var(--cf-border);
   background: var(--cf-input-bg);
-  padding: 0;
-  border-bottom: 1px solid var(--cf-border);
-  cursor: pointer;
-  flex-shrink: 0;
-  margin-top: 1px;
-  accent-color: var(--gold);
+  pointer-events: auto;
 }
 
 /* Submit button */
@@ -1571,7 +1577,7 @@ footer {
   }
 
   /* 16px = pas de zoom iOS au focus */
-  .clux-card input,
+  .clux-card input:not([type="checkbox"]),
   .clux-card textarea,
   .clux-card select {
     font-size: 16px;
