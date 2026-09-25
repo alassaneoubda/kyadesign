@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "node --use-system-ca ./node_modules/next/dist/bin/next dev",
-    "build": "node --use-system-ca ./node_modules/next/dist/bin/next build",
+    "build": "prisma generate && node --use-system-ca ./node_modules/next/dist/bin/next build",
     "start": "node --use-system-ca ./node_modules/next/dist/bin/next start",
+    "postinstall": "prisma generate",
     "lint": "eslint",
     "db:setup": "prisma db push && tsx prisma/seed.ts",
     "test": "tsx --test src/lib/academy.test.ts"
