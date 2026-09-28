@@ -40,6 +40,17 @@ model SiteSetting {
   cvFileName       String
 }
 
+/// Accès au back-office, modifiables depuis /admin/compte (ligne unique id = 1).
+/// Tant que la ligne n'existe pas, ADMIN_EMAIL / ADMIN_PASSWORD_HASH servent de repli.
+model AdminAccount {
+  id           Int      @id @default(1)
+  email        String
+  passwordHash String
+  version      Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model Fact {
   id        String @id @default(cuid())
   value     String

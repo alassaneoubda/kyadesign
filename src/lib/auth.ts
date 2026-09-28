@@ -1,6 +1,9 @@
 import { compare } from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { getAdminCredentials, type AdminCredentials } from "@/lib/admin-account";
+import { sessionMatchesCredentials } from "@/lib/admin-session-rules";
+import { logError } from "@/lib/log";
 
 const ADMIN_COOKIE = "kya_admin";
 const GUEST_COOKIE = "kya_guest";
@@ -22,19 +25,26 @@ async function signToken(payload: Record<string, string>, hours: number): Promis
 }
 
 /**
- * Vérifie l'identifiant administrateur lu depuis l'environnement.
- * Le mot de passe n'est jamais comparé en clair dans le code source.
+ * Vérifie les identifiants administrateur (base de données, sinon variables d'environnement).
+ * Le mot de passe n'est jamais comparé en clair : uniquement via bcrypt.
+ * @param email E-mail saisi.
+ * @param password Mot de passe saisi.
+ * @returns Les identifiants actifs si la saisie est correcte, sinon null.
+ * @throws Erreur de base de données si les accès ne peuvent pas être lus.
  */
-export async function credentialsMatch(email: string, password: string): Promise<boolean> {
-  const expectedEmail = process.env.ADMIN_EMAIL ?? "";
-  const hash = process.env.ADMIN_PASSWORD_HASH ?? "";
-  if (!expectedEmail || !hash) return false;
-  if (email.trim().toLowerCase() !== expectedEmail.trim().toLowerCase()) return false;
-  return compare(password, hash);
+export async function verifyAdminCredentials(email: string, password: string): Promise<AdminCredentials | null> {
+  const credentials = await getAdminCredentials();
+  if (!credentials) return null;
+  if (email.trim().toLowerCase() !== credentials.email) return null;
+  return (await compare(password, credentials.passwordHash)) ? credentials : null;
 }
 
-export async function signAdminToken(email: string): Promise<string> {
-  return signToken({ purpose: "admin", email }, 12);
+/**
+ * Signe la session admin. La version permet d'invalider les sessions après un changement d'accès.
+ * @param credentials Identifiants actifs au moment de la connexion.
+ */
+export async function signAdminToken(credentials: Pick<AdminCredentials, "email" | "version">): Promise<string> {
+  return signToken({ purpose: "admin", email: credentials.email, v: String(credentials.version) }, 12);
 }
 
 export async function signGuestToken(code: string): Promise<string> {
@@ -54,10 +64,26 @@ async function readPayload(cookieName: string, purpose: string): Promise<Record<
   }
 }
 
+/**
+ * Session admin valide uniquement si elle correspond aux accès actuels :
+ * changer l'e-mail ou le mot de passe déconnecte les autres appareils.
+ * Les jetons émis avant l'ajout de la version (sans `v`) restent valides tant que les accès
+ * proviennent encore des variables d'environnement.
+ * @returns E-mail de l'admin connecté, ou null.
+ */
 export async function getAdminSession(): Promise<{ email: string } | null> {
   const payload = await readPayload(ADMIN_COOKIE, "admin");
   if (!payload || typeof payload.email !== "string") return null;
-  return { email: payload.email };
+  let credentials: AdminCredentials | null;
+  try {
+    credentials = await getAdminCredentials();
+  } catch (error) {
+    logError("admin.session_check", error);
+    return null;
+  }
+  const tokenVersion = typeof payload.v === "string" ? payload.v : undefined;
+  if (!credentials || !sessionMatchesCredentials(payload.email, tokenVersion, credentials)) return null;
+  return { email: credentials.email };
 }
 
 export async function getGuestCode(): Promise<string | null> {

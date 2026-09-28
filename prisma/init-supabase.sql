@@ -228,3 +228,15 @@ ALTER TABLE "public"."ProjectImage" ADD CONSTRAINT "ProjectImage_projectId_fkey"
 -- AddForeignKey
 ALTER TABLE "public"."AlbumPhoto" ADD CONSTRAINT "AlbumPhoto_albumId_fkey" FOREIGN KEY ("albumId") REFERENCES "public"."Album"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+
+-- CreateTable : accès back-office modifiables depuis /admin/compte (ajout 2026-09-28)
+CREATE TABLE IF NOT EXISTS "public"."AdminAccount" (
+    "id" INTEGER NOT NULL DEFAULT 1,
+    "email" TEXT NOT NULL,
+    "passwordHash" TEXT NOT NULL,
+    "version" INTEGER NOT NULL DEFAULT 1,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AdminAccount_pkey" PRIMARY KEY ("id")
+);

@@ -1,15 +1,24 @@
 "use server";
 
+import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { cookieNames, credentialsMatch, getAdminSession, signAdminToken, signGuestToken } from "@/lib/auth";
+import { getAdminCredentials, saveAdminCredentials } from "@/lib/admin-account";
+import {
+  cookieNames,
+  getAdminSession,
+  signAdminToken,
+  signGuestToken,
+  verifyAdminCredentials,
+} from "@/lib/auth";
 import { createAccessCode, isAccessCode, normalizeCode } from "@/lib/codes";
-import { logInfo } from "@/lib/log";
+import { logError, logInfo } from "@/lib/log";
 import { savePublicImage, saveSoftwareIcon, saveCvPdf } from "@/lib/storage";
 import { sendContactMail } from "@/lib/mail";
 import {
+  adminAccountSchema,
   albumSchema,
   categorySchema,
   checked,
@@ -43,13 +52,70 @@ function fail(message: string): { error: string } {
 export async function loginAction(_state: { error: string } | null, formData: FormData): Promise<{ error: string }> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
-  const ok = await credentialsMatch(email, password);
-  if (!ok) return fail("Identifiants incorrects.");
-  const token = await signAdminToken(email.trim().toLowerCase());
+  let credentials;
+  try {
+    credentials = await verifyAdminCredentials(email, password);
+  } catch (error) {
+    logError("admin.login", error);
+    return fail("Connexion impossible pour le moment. Réessaie dans un instant.");
+  }
+  if (!credentials) return fail("Identifiants incorrects.");
+  const token = await signAdminToken(credentials);
   const store = await cookies();
   store.set(cookieNames.admin, token, cookieOptions);
-  logInfo("admin.login");
+  logInfo("admin.login", { source: credentials.source });
   redirect("/admin");
+}
+
+type AccountState = { ok: boolean; error: string } | null;
+
+/**
+ * Change l'e-mail et/ou le mot de passe de connexion au back-office.
+ * Exige le mot de passe actuel, hache le nouveau avec bcrypt (coût 12) et ré-émet la session :
+ * les autres appareils connectés sont déconnectés.
+ * @param _state État précédent du formulaire.
+ * @param formData currentPassword, email, newPassword, confirmPassword.
+ * @returns ok, ou le message d'erreur à afficher.
+ */
+export async function updateAdminAccountAction(_state: AccountState, formData: FormData): Promise<AccountState> {
+  await requireAdmin();
+  const parsed = adminAccountSchema.safeParse({
+    currentPassword: String(formData.get("currentPassword") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    newPassword: String(formData.get("newPassword") ?? ""),
+    confirmPassword: String(formData.get("confirmPassword") ?? ""),
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
+  }
+  const { currentPassword, email, newPassword } = parsed.data;
+
+  try {
+    const current = await getAdminCredentials();
+    if (!current || !(await compare(currentPassword, current.passwordHash))) {
+      logInfo("admin.credentials_update_denied");
+      return { ok: false, error: "Mot de passe actuel incorrect." };
+    }
+    if (email === current.email && !newPassword) {
+      return { ok: false, error: "Aucune modification à enregistrer." };
+    }
+    const passwordHash = newPassword ? await hash(newPassword, 12) : current.passwordHash;
+    const version = await saveAdminCredentials(current, { email, passwordHash });
+    if (version === null) {
+      return { ok: false, error: "Les accès ont été modifiés entre-temps. Recharge la page et recommence." };
+    }
+    const store = await cookies();
+    store.set(cookieNames.admin, await signAdminToken({ email, version }), cookieOptions);
+    logInfo("admin.credentials_updated", {
+      emailChanged: String(email !== current.email),
+      passwordChanged: String(Boolean(newPassword)),
+    });
+  } catch (error) {
+    logError("admin.credentials_update", error);
+    return { ok: false, error: "Enregistrement impossible pour le moment. Réessaie dans un instant." };
+  }
+  revalidatePath("/admin/compte");
+  return { ok: true, error: "" };
 }
 
 export async function logoutAction(): Promise<void> {

@@ -109,6 +109,46 @@ export const contactSchema = z.object({
   message: z.string().trim().min(5).max(4000),
 });
 
+export const ADMIN_PASSWORD_MIN = 12;
+// bcrypt ignore tout ce qui dépasse 72 octets : au-delà, deux mots de passe différents seraient équivalents.
+const ADMIN_PASSWORD_MAX_BYTES = 72;
+
+/**
+ * Changement des accès back-office. Le mot de passe actuel est toujours exigé ;
+ * un nouveau mot de passe vide signifie « garder l'actuel ».
+ */
+export const adminAccountSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Saisis ton mot de passe actuel.").max(200),
+    email: z.string().trim().toLowerCase().email("Adresse e-mail invalide.").max(160),
+    newPassword: z.string().max(200),
+    confirmPassword: z.string().max(200),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.newPassword) return;
+    if (value.newPassword.length < ADMIN_PASSWORD_MIN) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["newPassword"],
+        message: `Le nouveau mot de passe doit faire au moins ${ADMIN_PASSWORD_MIN} caractères.`,
+      });
+    }
+    if (new TextEncoder().encode(value.newPassword).length > ADMIN_PASSWORD_MAX_BYTES) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["newPassword"],
+        message: "Le nouveau mot de passe est trop long (72 caractères maximum).",
+      });
+    }
+    if (value.newPassword !== value.confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["confirmPassword"],
+        message: "La confirmation ne correspond pas au nouveau mot de passe.",
+      });
+    }
+  });
+
 export function checked(formData: FormData, name: string): boolean {
   return formData.get(name) === "on";
 }

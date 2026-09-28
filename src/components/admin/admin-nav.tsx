@@ -28,7 +28,10 @@ const groups: { title: string; items: NavItem[] }[] = [
   },
   {
     title: "Réglages",
-    items: [{ label: "Textes et contact", href: "/admin/reglages" }],
+    items: [
+      { label: "Textes et contact", href: "/admin/reglages" },
+      { label: "Compte & sécurité", href: "/admin/compte" },
+    ],
   },
 ];
 

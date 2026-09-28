@@ -2,12 +2,13 @@ import { notFound } from "next/navigation";
 import { ShareBox } from "@/components/admin/share-box";
 import { PhotoUploader } from "@/components/gallery/photo-uploader";
 import { prisma } from "@/lib/prisma";
+import { getSiteUrl } from "@/lib/site-url";
 import { deleteAlbumAction, deletePhotoAction, saveAlbumAction } from "@/server/actions";
 
 export const dynamic = "force-dynamic";
 
 function shareMessage(title: string, code: string): string {
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const origin = getSiteUrl();
   return [
     "Bonjour,",
     "Vos photos sont disponibles.",

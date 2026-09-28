@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { loginAction, unlockAlbumAction } from "@/server/actions";
+import { loginAction, unlockAlbumAction, updateAdminAccountAction } from "@/server/actions";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, null);
@@ -31,6 +31,51 @@ export function LoginForm() {
       <button className="btn" type="submit" disabled={pending}>
         {pending ? "Vérification…" : "Entrer"}
       </button>
+    </form>
+  );
+}
+
+/**
+ * Formulaire de changement des accès back-office (e-mail et/ou mot de passe).
+ * @param currentEmail E-mail de connexion actuel, prérempli.
+ * @param minLength Longueur minimale du nouveau mot de passe.
+ */
+export function AccountForm({ currentEmail, minLength }: { currentEmail: string; minLength: number }) {
+  const [state, action, pending] = useActionState(updateAdminAccountAction, null);
+  return (
+    <form action={action} className="bo-form">
+      <div className="bo-form-grid">
+        <label className="full">
+          E-mail de connexion
+          <input name="email" type="email" autoComplete="username" defaultValue={currentEmail} required />
+        </label>
+        <label>
+          Nouveau mot de passe
+          <input
+            name="newPassword"
+            type="password"
+            autoComplete="new-password"
+            minLength={minLength}
+            maxLength={72}
+            placeholder="Laisser vide pour le garder"
+          />
+        </label>
+        <label>
+          Confirmer le nouveau mot de passe
+          <input name="confirmPassword" type="password" autoComplete="new-password" maxLength={72} />
+        </label>
+        <label className="full">
+          Mot de passe actuel (obligatoire)
+          <input name="currentPassword" type="password" autoComplete="current-password" required />
+        </label>
+      </div>
+      {state?.error && <p className="bo-error">{state.error}</p>}
+      {state?.ok && <p className="bo-success">Accès mis à jour. Les autres appareils ont été déconnectés.</p>}
+      <div className="bo-form-actions">
+        <button className="btn" type="submit" disabled={pending}>
+          {pending ? "Enregistrement…" : "Enregistrer"}
+        </button>
+      </div>
     </form>
   );
 }
