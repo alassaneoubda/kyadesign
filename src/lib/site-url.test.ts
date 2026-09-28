@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getSiteUrl } from "./site-url";
+import { getSiteUrl, isLocalUrl } from "./site-url";
 
 function withSiteUrl(value: string | undefined, run: () => void) {
   const previous = process.env.NEXT_PUBLIC_SITE_URL;
@@ -36,4 +36,14 @@ test("should_fallbackToLocalhost_when_invalid", () => {
   withSiteUrl("pas une url !!", () => {
     assert.equal(getSiteUrl(), "http://localhost:3000");
   });
+});
+
+test("should_flagLocalUrl_when_localhostOrLoopback", () => {
+  assert.equal(isLocalUrl("http://localhost:3000"), true);
+  assert.equal(isLocalUrl("http://127.0.0.1:3000"), true);
+});
+
+test("should_notFlagLocalUrl_when_realDomainOrLanIp", () => {
+  assert.equal(isLocalUrl("https://kyadesign.vercel.app"), false);
+  assert.equal(isLocalUrl("http://192.168.9.231:3000"), false);
 });

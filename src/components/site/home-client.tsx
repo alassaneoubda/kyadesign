@@ -277,7 +277,6 @@ export function HomeClient({ data }: { data: HomeData }) {
               </div>
             </>
           ) : null}
-          <a className="btn lock-note" href="/galerie">Accès client — albums privés</a>
         </div>
       </section>
 

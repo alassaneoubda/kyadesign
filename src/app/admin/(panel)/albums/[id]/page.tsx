@@ -2,13 +2,12 @@ import { notFound } from "next/navigation";
 import { ShareBox } from "@/components/admin/share-box";
 import { PhotoUploader } from "@/components/gallery/photo-uploader";
 import { prisma } from "@/lib/prisma";
-import { getSiteUrl } from "@/lib/site-url";
+import { getPublicOrigin } from "@/lib/request-origin";
 import { deleteAlbumAction, deletePhotoAction, saveAlbumAction } from "@/server/actions";
 
 export const dynamic = "force-dynamic";
 
-function shareMessage(title: string, code: string): string {
-  const origin = getSiteUrl();
+function shareMessage(title: string, code: string, origin: string): string {
   return [
     "Bonjour,",
     "Vos photos sont disponibles.",
@@ -48,7 +47,7 @@ export default async function AlbumEditPage({ params }: PageProps<"/admin/albums
         </form>
       </header>
 
-      <ShareBox message={shareMessage(album.title, album.accessCode)} />
+      <ShareBox message={shareMessage(album.title, album.accessCode, await getPublicOrigin())} />
 
       <div className="bo-workspace">
         <form className="bo-form" action={saveAlbumAction}>

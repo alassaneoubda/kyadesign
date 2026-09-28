@@ -21,7 +21,6 @@ const groups: { title: string; items: NavItem[] }[] = [
       { label: "Catégories", href: "/admin/categories" },
       { label: "Formations", href: "/admin/formations" },
       { label: "Packs", href: "/admin/packs" },
-      { label: "Modes", href: "/admin/modes" },
       { label: "Services", href: "/admin/services" },
       { label: "Logiciels", href: "/admin/logiciels" },
     ],

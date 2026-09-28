@@ -1272,11 +1272,6 @@ footer {
   border-top: 1px solid var(--line);
 }
 
-.lock-note {
-  margin-top: 24px;
-  display: inline-flex;
-}
-
 /* PRIVATE PAGE */
 .gate {
   min-height: 80svh;
