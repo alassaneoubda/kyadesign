@@ -28,7 +28,7 @@ export async function sendContactMail(request: ContactMail): Promise<boolean> {
 
   const text = [
     `Nom: ${request.name}`,
-    `Email: ${request.email}`,
+    `Email: ${request.email || "Non renseigné"}`,
     request.phone ? `Téléphone: ${request.phone}` : "",
     request.projectType ? `Type de projet: ${request.projectType}` : "",
     request.budget ? `Budget: ${request.budget}` : "",
@@ -47,7 +47,7 @@ export async function sendContactMail(request: ContactMail): Promise<boolean> {
       body: JSON.stringify({
         from,
         to: [to],
-        reply_to: request.email,
+        ...(request.email ? { reply_to: request.email } : {}),
         subject: `Nouvelle demande — ${request.name}`,
         text,
       }),

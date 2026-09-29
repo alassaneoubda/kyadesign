@@ -6,16 +6,17 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getAdminCredentials, saveAdminCredentials } from "@/lib/admin-account";
+import { requireAdmin } from "@/lib/admin-guard";
 import {
   cookieNames,
-  getAdminSession,
   signAdminToken,
   signGuestToken,
   verifyAdminCredentials,
 } from "@/lib/auth";
 import { createAccessCode, isAccessCode, normalizeCode } from "@/lib/codes";
 import { logError, logInfo } from "@/lib/log";
-import { savePublicImage, saveSoftwareIcon, saveCvPdf } from "@/lib/storage";
+import { slugify } from "@/lib/showcase";
+import { imageHasTransparency, savePublicImage, saveSoftwareIcon, saveCvPdf } from "@/lib/storage";
 import { sendContactMail } from "@/lib/mail";
 import {
   adminAccountSchema,
@@ -39,11 +40,6 @@ const cookieOptions = {
   path: "/",
   maxAge: 60 * 60 * 12,
 };
-
-async function requireAdmin(): Promise<void> {
-  const session = await getAdminSession();
-  if (!session) redirect("/admin/login");
-}
 
 function fail(message: string): { error: string } {
   return { error: message };
@@ -327,6 +323,60 @@ export async function deletePhotoAction(formData: FormData): Promise<void> {
   redirect(`/admin/albums/${photo.albumId}`);
 }
 
+// ─── Réalisations ─────────────────────────────────────────────────────────────
+
+/**
+ * Identifiant libre dérivé du texte (slug), suffixé -2, -3… si déjà pris.
+ * Une création ne peut jamais écraser une réalisation existante.
+ */
+async function uniqueProjectId(base: string): Promise<string> {
+  const root = slugify(base) || "realisation";
+  const rows = await prisma.project.findMany({
+    where: { id: { startsWith: root } },
+    select: { id: true },
+    take: 1000,
+  });
+  const taken = new Set(rows.map((row) => row.id));
+  if (!taken.has(root)) return root;
+  let suffix = 2;
+  while (taken.has(`${root}-${suffix}`)) suffix += 1;
+  return `${root}-${suffix}`;
+}
+
+/** Catégorie conservée seulement si elle existe (hors « Tous ») ; sinon « sans catégorie ». */
+async function resolveCategoryId(categoryId: string): Promise<string> {
+  if (!categoryId || categoryId === "all") return "";
+  const category = await prisma.category.findUnique({ where: { id: categoryId }, select: { id: true } });
+  return category?.id ?? "";
+}
+
+function tagsToJson(raw: string): string {
+  return JSON.stringify(
+    raw
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+  );
+}
+
+/** Envoie couverture et galerie avant toute écriture en base (pas d'appel externe dans la transaction). */
+async function uploadProjectImages(formData: FormData): Promise<{ cover: string | null; gallery: string[] }> {
+  const coverFile = formData.get("cover");
+  const cover = coverFile instanceof File ? await savePublicImage(coverFile, "creations", { compress: true }) : null;
+  const files = formData.getAll("gallery").filter((item): item is File => item instanceof File && item.size > 0);
+  const gallery: string[] = [];
+  for (const file of files) {
+    const src = await savePublicImage(file, "creations", { compress: true });
+    if (src) gallery.push(src);
+  }
+  return { cover, gallery };
+}
+
+/**
+ * Crée ou met à jour une réalisation. Tous les champs sont facultatifs :
+ * un champ vide est enregistré vide et simplement masqué sur le site.
+ * @param formData Formulaire back-office (existingId présent en modification).
+ */
 export async function saveProjectAction(formData: FormData): Promise<void> {
   await requireAdmin();
   const parsed = projectSchema.safeParse({
@@ -337,51 +387,67 @@ export async function saveProjectAction(formData: FormData): Promise<void> {
     clientName: formData.get("clientName"),
     role: formData.get("role"),
     featured: checked(formData, "featured"),
-    tags: formData.get("tags") ?? "",
+    visible: checked(formData, "visible"),
+    tags: formData.get("tags"),
     probleme: formData.get("probleme"),
     concept: formData.get("concept"),
     creation: formData.get("creation"),
     resultat: formData.get("resultat"),
-    sortOrder: formData.get("sortOrder") || 0,
+    sortOrder: formData.get("sortOrder"),
   });
-  if (!parsed.success) redirect("/admin/projets?erreur=1");
-  const tags = JSON.stringify(
-    parsed.data.tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean)
-  );
-  const coverFile = formData.get("cover");
-  const cover = coverFile instanceof File ? await savePublicImage(coverFile, "creations", { compress: true }) : null;
-  const existing = await prisma.project.findUnique({ where: { id: parsed.data.id } });
-  const payload = { ...parsed.data, tags, ...(cover ? { cover } : {}) };
-  if (existing) {
-    await prisma.project.update({ where: { id: parsed.data.id }, data: payload });
-  } else if (!cover) {
-    redirect("/admin/projets?erreur=cover");
+  if (!parsed.success) redirect("/admin/projets?erreur=format");
+  const existingId = String(formData.get("existingId") ?? "").trim();
+  const { id: requestedId, ...fields } = parsed.data;
+
+  let images: { cover: string | null; gallery: string[] };
+  try {
+    images = await uploadProjectImages(formData);
+  } catch (error) {
+    logError("project.upload", error);
+    redirect(`/admin/projets?erreur=image${existingId ? `&edit=${encodeURIComponent(existingId)}` : ""}`);
+  }
+
+  const data = { ...fields, categoryId: await resolveCategoryId(fields.categoryId), tags: tagsToJson(fields.tags) };
+  const removeCover = checked(formData, "removeCover");
+  let projectId = existingId;
+  if (existingId) {
+    const exists = await prisma.project.findUnique({ where: { id: existingId }, select: { id: true } });
+    if (!exists) redirect("/admin/projets?erreur=introuvable");
   } else {
-    await prisma.project.create({ data: { ...payload, cover } });
+    projectId = await uniqueProjectId(requestedId || fields.title);
   }
-  const gallery = formData.getAll("gallery").filter((item): item is File => item instanceof File && item.size > 0);
-  const start = await prisma.projectImage.count({ where: { projectId: parsed.data.id } });
-  for (const [index, file] of gallery.entries()) {
-    const src = await savePublicImage(file, "creations", { compress: true });
-    if (!src) continue;
-    await prisma.projectImage.create({
-      data: { projectId: parsed.data.id, src, sortOrder: start + index },
-    });
+
+  const start = existingId ? await prisma.projectImage.count({ where: { projectId } }) : 0;
+  const coverUpdate = images.cover ? { cover: images.cover } : removeCover ? { cover: "" } : {};
+  try {
+    await prisma.$transaction([
+      existingId
+        ? prisma.project.update({ where: { id: projectId }, data: { ...data, ...coverUpdate } })
+        : prisma.project.create({ data: { ...data, id: projectId, cover: images.cover ?? "" } }),
+      ...images.gallery.map((src, index) =>
+        prisma.projectImage.create({ data: { projectId, src, sortOrder: start + index } })
+      ),
+    ]);
+  } catch (error) {
+    logError("project.save", error);
+    redirect(`/admin/projets?erreur=1${existingId ? `&edit=${encodeURIComponent(existingId)}` : ""}`);
   }
-  logInfo("project.save", { projectId: parsed.data.id });
+  logInfo(existingId ? "project.update" : "project.create", { projectId, visible: String(fields.visible) });
   revalidatePath("/");
-  redirect("/admin/projets");
+  revalidatePath("/admin/projets");
+  redirect("/admin/projets?ok=enregistre");
 }
 
 export async function deleteProjectAction(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
-  if (id) await prisma.project.delete({ where: { id } });
+  if (id) {
+    await prisma.project.deleteMany({ where: { id } });
+    logInfo("project.delete", { projectId: id });
+  }
   revalidatePath("/");
-  redirect("/admin/projets");
+  revalidatePath("/admin/projets");
+  redirect("/admin/projets?ok=supprime");
 }
 
 export async function saveServiceAction(formData: FormData): Promise<void> {
@@ -474,31 +540,45 @@ export async function deleteProjectImageAction(formData: FormData): Promise<void
 
 /**
  * Enregistre la demande du formulaire, puis l'envoie par e-mail.
+ * L'e-mail du visiteur est facultatif ; s'il est saisi, son format est vérifié.
  * Le visiteur voit une confirmation dès que la demande est stockée.
  */
 export async function submitContactAction(
   _state: { ok: boolean; error: string } | null,
   formData: FormData
 ): Promise<{ ok: boolean; error: string }> {
+  if (formData.get("rgpd") !== "on") {
+    return { ok: false, error: "Merci d'accepter la politique de confidentialité." };
+  }
   const parsed = contactSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
-    phone: String(formData.get("tel") ?? ""),
-    projectType: String(formData.get("type") ?? ""),
-    budget: String(formData.get("budget") ?? ""),
-    delay: String(formData.get("delai") ?? ""),
+    phone: formData.get("tel"),
+    projectType: formData.get("type"),
+    budget: formData.get("budget"),
+    delay: formData.get("delai"),
     message: formData.get("message"),
   });
-  if (!parsed.success || formData.get("rgpd") !== "on") {
-    return { ok: false, error: "Vérifie les champs obligatoires." };
+  if (!parsed.success) {
+    const emailIssue = parsed.error.issues.some((issue) => issue.path[0] === "email");
+    return {
+      ok: false,
+      error: emailIssue ? "Adresse e-mail invalide — corrige-la ou laisse le champ vide." : "Vérifie les champs obligatoires.",
+    };
   }
 
-  const saved = await prisma.contactRequest.create({ data: parsed.data });
+  let saved;
+  try {
+    saved = await prisma.contactRequest.create({ data: parsed.data });
+  } catch (error) {
+    logError("contact.save", error);
+    return { ok: false, error: "Enregistrement impossible pour le moment. Réessaie dans un instant." };
+  }
   const emailSent = await sendContactMail(saved);
   if (emailSent) {
     await prisma.contactRequest.update({ where: { id: saved.id }, data: { emailSent: true } });
   }
-  logInfo("contact.received", { requestId: saved.id });
+  logInfo("contact.received", { requestId: saved.id, withEmail: String(Boolean(saved.email)) });
   revalidatePath("/admin/demandes");
   return { ok: true, error: "" };
 }
@@ -513,17 +593,10 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
     whatsapp: formData.get("whatsapp"),
     whatsappDisplay: formData.get("whatsappDisplay"),
     email: formData.get("email"),
-    instagram: formData.get("instagram"),
-    instagramHandle: formData.get("instagramHandle"),
-    tiktok: formData.get("tiktok"),
-    tiktokHandle: formData.get("tiktokHandle"),
-    behance: formData.get("behance"),
-    behanceHandle: formData.get("behanceHandle"),
-    linkedin: formData.get("linkedin") || "",
-    linkedinHandle: formData.get("linkedinHandle") || "",
     aboutIntro: formData.get("aboutIntro"),
     aboutApproach: formData.get("aboutApproach"),
     aboutExperience: formData.get("aboutExperience"),
+    aboutTagline: formData.get("aboutTagline"),
     contactLocation: formData.get("contactLocation"),
   });
   if (!parsed.success) redirect("/admin/reglages?erreur=1");
@@ -534,30 +607,37 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
 
   let heroImage: string | null = null;
   let portraitImage: string | null = null;
+  let portraitCutout = false;
   let cvFileName: string | null = null;
   try {
     heroImage =
       heroFile instanceof File && heroFile.size > 0
         ? await savePublicImage(heroFile, "brand", { compress: true })
         : null;
-    portraitImage =
-      portraitFile instanceof File && portraitFile.size > 0
-        ? await savePublicImage(portraitFile, "brand", { compress: true })
-        : null;
+    if (portraitFile instanceof File && portraitFile.size > 0) {
+      portraitCutout = await imageHasTransparency(portraitFile);
+      portraitImage = await savePublicImage(portraitFile, "brand", { compress: true });
+    }
     cvFileName = cvFile instanceof File && cvFile.size > 0 ? await saveCvPdf(cvFile) : null;
-  } catch {
+  } catch (error) {
+    logError("settings.upload", error);
     redirect("/admin/reglages?erreur=1");
   }
 
-  await prisma.siteSetting.update({
-    where: { id: 1 },
-    data: {
-      ...parsed.data,
-      ...(heroImage ? { heroImage } : {}),
-      ...(portraitImage ? { portraitImage } : {}),
-      ...(cvFileName ? { cvFileName } : {}),
-    },
-  });
+  try {
+    await prisma.siteSetting.update({
+      where: { id: 1 },
+      data: {
+        ...parsed.data,
+        ...(heroImage ? { heroImage } : {}),
+        ...(portraitImage ? { portraitImage, portraitCutout } : {}),
+        ...(cvFileName ? { cvFileName } : {}),
+      },
+    });
+  } catch (error) {
+    logError("settings.save", error);
+    redirect("/admin/reglages?erreur=1");
+  }
   logInfo("settings.save");
   revalidatePath("/");
   redirect("/admin/reglages?ok=1");

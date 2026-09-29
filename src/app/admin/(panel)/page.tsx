@@ -1,5 +1,8 @@
-import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { VisitsPanel } from "@/components/admin/visits-panel";
+import { logError } from "@/lib/log";
+import { prisma } from "@/lib/prisma";
+import { getVisitStats, type VisitStats } from "@/server/visits";
 
 export const dynamic = "force-dynamic";
 
@@ -14,21 +17,39 @@ function formatDate(value: Date): string {
  * Tableau de bord : volumes, actions rapides, dernières demandes et albums.
  */
 export default async function DashboardPage() {
-  const [albums, photos, projects, formations, packs, demandes, recentDemandes, recentAlbums] =
-    await Promise.all([
-      prisma.album.count(),
-      prisma.albumPhoto.count(),
-      prisma.project.count(),
-      prisma.formation.count(),
-      prisma.pack.count(),
-      prisma.contactRequest.count(),
-      prisma.contactRequest.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
-      prisma.album.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 5,
-        include: { _count: { select: { photos: true } } },
-      }),
-    ]);
+  const visitStats: Promise<VisitStats | null> = getVisitStats().catch((error: unknown) => {
+    logError("dashboard.visits", error);
+    return null;
+  });
+  const [
+    visits,
+    pendingReviews,
+    albums,
+    photos,
+    projects,
+    visibleProjects,
+    formations,
+    packs,
+    demandes,
+    recentDemandes,
+    recentAlbums,
+  ] = await Promise.all([
+    visitStats,
+    prisma.testimonial.count({ where: { source: "visitor", visible: false } }),
+    prisma.album.count(),
+    prisma.albumPhoto.count(),
+    prisma.project.count(),
+    prisma.project.count({ where: { visible: true } }),
+    prisma.formation.count(),
+    prisma.pack.count(),
+    prisma.contactRequest.count(),
+    prisma.contactRequest.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
+    prisma.album.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: { _count: { select: { photos: true } } },
+    }),
+  ]);
 
   return (
     <>
@@ -45,6 +66,15 @@ export default async function DashboardPage() {
         </Link>
       </header>
 
+      {pendingReviews > 0 ? (
+        <Link className="bo-pending" href="/admin/temoignages">
+          {pendingReviews} avis visiteur{pendingReviews > 1 ? "s" : ""} en attente de validation
+          <em>Modérer</em>
+        </Link>
+      ) : null}
+
+      <VisitsPanel stats={visits} />
+
       <section className="bo-stats" aria-label="Indicateurs">
         <article className="bo-stat">
           <span>Demandes</span>
@@ -59,7 +89,7 @@ export default async function DashboardPage() {
         <article className="bo-stat">
           <span>Réalisations</span>
           <strong>{projects}</strong>
-          <small>Portfolio public</small>
+          <small>{visibleProjects} visible(s) sur le site</small>
         </article>
         <article className="bo-stat">
           <span>Academy</span>

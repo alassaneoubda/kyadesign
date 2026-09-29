@@ -246,141 +246,7 @@ h3,
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-size: 0.75rem;
-  transition: 0.2s;
-}
-
-/* ABOUT */
-.about-grid {
-  display: grid;
-  grid-template-columns: 0.85fr 1.15fr;
-  gap: clamp(32px, 6vw, 80px);
-  align-items: center;
-}
-
-.about-photo {
-  margin: 0;
-  position: relative;
-  overflow: hidden;
-  background: #050505;
-  isolation: isolate;
-}
-
-.about-photo::before {
-  content: "";
-  position: absolute;
-  inset: auto -12% -18% -12%;
-  height: 55%;
-  background: radial-gradient(ellipse at center, rgba(255, 204, 0, 0.35), transparent 68%);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.about-photo img {
-  width: 100%;
-  height: min(78vh, 820px);
-  object-fit: cover;
-  object-position: center 18%;
-  display: block;
-  transform: scale(1);
-  transition: transform 0.7s ease;
-}
-
-.about-photo:hover img {
-  transform: scale(1.03);
-}
-
-.about-name {
-  font-size: clamp(2.4rem, 5vw, 4.4rem);
-  margin: 10px 0 8px;
-  font-style: italic;
-}
-
-.about-role {
-  margin: 0 0 28px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-size: 0.78rem;
-  color: var(--red);
-}
-
-.about-text p {
-  font-size: 1.12rem;
-  color: #d6d2cc;
-}
-
-.about-grid.is-in .about-photo {
-  animation: about-photo-in 0.9s ease both;
-}
-
-.about-grid.is-in .about-text {
-  animation: about-text-in 0.9s ease 0.12s both;
-}
-
-@keyframes about-photo-in {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes about-text-in {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .about-photo img,
-  .about-grid.is-in .about-photo,
-  .about-grid.is-in .about-text {
-    animation: none;
-    transition: none;
-    transform: none;
-    opacity: 1;
-  }
-}
-
-.facts {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-top: 40px;
-}
-
-.fact {
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
-}
-
-.fact strong {
-  display: block;
-  font-family: var(--serif);
-  font-size: 2.4rem;
-  font-weight: 500;
-}
-
-.skill-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 28px;
-}
-
-.chip {
-  border: 1px solid var(--line);
-  padding: 8px 14px;
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.25s ease;
 }
 
 /* ==========================================================================
@@ -740,8 +606,8 @@ h3,
 
 .soft-row {
   display: grid;
-  grid-template-columns: minmax(200px, 240px) 1fr 52px;
-  gap: 16px;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 24px;
   align-items: center;
 }
 
@@ -766,16 +632,7 @@ h3,
   letter-spacing: 0.02em;
 }
 
-.bar {
-  height: 2px;
-  background: #222;
-}
-
-.bar > span {
-  display: block;
-  height: 2px;
-  background: var(--red);
-}
+/* Jauges : voir vitrine.css (.bar) */
 
 /* CLIENTS */
 .clients {
@@ -941,55 +798,7 @@ a.cli-val:hover {
   margin: 0 0 16px;
 }
 
-.clux-social-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px 28px;
-}
-
-.csoc {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: #b0aba3;
-  text-decoration: none;
-  transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.csoc svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  opacity: 0.72;
-  transition: opacity 0.25s ease,
-              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.25s ease,
-              color 0.25s ease;
-}
-
-.csoc em {
-  font-style: normal;
-  color: #e0dbd3;
-  transition: color 0.25s ease;
-}
-
-.csoc:hover {
-  color: var(--gold);
-  transform: translateY(-2px);
-}
-
-.csoc:hover svg {
-  opacity: 1;
-  transform: scale(1.12);
-  color: var(--gold);
-  filter: drop-shadow(0 2px 8px rgba(201, 162, 39, 0.35));
-}
-
-.csoc:hover em {
-  color: #fff;
-}
+/* Icônes réseaux : voir vitrine.css (.clux-social-row / .csoc) */
 
 /* ── COLONNE DROITE ── */
 .clux-right {
@@ -1225,7 +1034,7 @@ a.cli-val:hover {
 /* Form success */
 .form-ok {
   color: #9d9;
-  display: none;
+  display: block;
   margin: 10px 0 0;
   font-size: 0.88rem;
 }
@@ -1352,7 +1161,14 @@ footer {
   }
 
   .nav-links {
-    display: none;
+    display: flex;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    transition: opacity 0.28s ease, transform 0.32s var(--ease-out), visibility 0s linear 0.32s;
+    max-height: calc(100svh - 64px);
+    overflow-y: auto;
     position: absolute;
     top: 100%;
     left: 0;
@@ -1368,7 +1184,11 @@ footer {
   }
 
   .nav-links.is-open {
-    display: flex;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    transition: opacity 0.28s ease, transform 0.32s var(--ease-out), visibility 0s;
   }
 
   .nav-links a {
@@ -1378,7 +1198,7 @@ footer {
     border-bottom: 1px solid rgba(243, 241, 238, 0.06);
   }
 
-  .nav-links a:last-child {
+  .nav-links a.nav-contact {
     border-bottom: 0;
     margin-top: 8px;
     text-align: center;
@@ -1417,59 +1237,12 @@ footer {
     object-position: center center;
   }
 
-  .about-grid,
   .clux-grid,
   .services,
   .steps,
   .clients,
   .study-gallery {
     grid-template-columns: 1fr;
-  }
-
-  .about-grid {
-    gap: 28px;
-  }
-
-  .about-photo {
-    order: -1;
-    border-radius: 2px;
-  }
-
-  .about-photo img {
-    height: min(58svh, 420px);
-    object-position: center 12%;
-  }
-
-  .about-name {
-    font-size: clamp(2rem, 10vw, 2.8rem);
-  }
-
-  .about-role {
-    margin-bottom: 18px;
-    font-size: 0.72rem;
-  }
-
-  .about-text p {
-    font-size: 0.95rem;
-  }
-
-  .facts {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    margin-top: 28px;
-  }
-
-  .fact strong {
-    font-size: 2rem;
-  }
-
-  .skill-list {
-    gap: 8px;
-  }
-
-  .chip {
-    padding: 7px 12px;
-    font-size: 0.72rem;
   }
 
   /* Filtres portfolio : défilement horizontal fluide */
@@ -1517,15 +1290,10 @@ footer {
 
   /* Compétences logiciels */
   .soft-row {
-    grid-template-columns: 1fr auto;
-    gap: 10px 12px;
+    grid-template-columns: 1fr;
+    gap: 12px;
     padding: 12px 0;
     border-bottom: 1px solid rgba(243, 241, 238, 0.06);
-  }
-
-  .soft-row .bar {
-    grid-column: 1 / -1;
-    order: 3;
   }
 
   .soft-logo {
@@ -1546,15 +1314,6 @@ footer {
   .clux-sub {
     font-size: 0.95rem;
     margin-bottom: 28px;
-  }
-
-  .clux-social-row {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .csoc {
-    width: 100%;
   }
 
   .clux-card {
@@ -1640,10 +1399,6 @@ footer {
   .service-kya-card-text {
     font-size: 0.78rem;
     line-height: 1.5;
-  }
-
-  .about-photo img {
-    height: min(52svh, 360px);
   }
 
   .cli {

@@ -1,6 +1,23 @@
 import { z } from "zod";
+import { isSafeExternalUrl, isSocialPlatform } from "@/lib/social";
 
 const topics = z.string().trim().min(1, "Indique au moins un élément enseigné.");
+
+/**
+ * Texte facultatif : un champ absent (null) ou vide devient "" — jamais « null » ou « undefined » affiché.
+ * @param max Longueur maximale acceptée.
+ */
+function optionalText(max: number) {
+  return z.preprocess((value) => (value == null ? "" : value), z.string().trim().max(max));
+}
+
+/** Ordre d'affichage : vide ou absent = 0. */
+const sortOrderField = z.preprocess(
+  (value) => (value == null || value === "" ? 0 : value),
+  z.coerce.number().int().min(0).max(999)
+);
+
+const emailFormat = z.string().email();
 
 export const formationSchema = z.object({
   title: z.string().trim().min(2).max(120),
@@ -37,20 +54,69 @@ export const albumSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).max(999),
 });
 
+/**
+ * Réalisation : tous les champs de contenu sont facultatifs.
+ * Seules les longueurs maximales et le format de l'identifiant (s'il est saisi) sont contrôlés.
+ */
 export const projectSchema = z.object({
-  id: z.string().trim().regex(/^[a-z0-9-]+$/, "Identifiant en minuscules, sans espace."),
-  title: z.string().trim().min(2).max(120),
-  categoryId: z.string().trim().min(2),
-  year: z.string().trim().min(4).max(4),
-  clientName: z.string().trim().min(1).max(120),
-  role: z.string().trim().min(1).max(160),
+  id: optionalText(60).refine((value) => value === "" || /^[a-z0-9-]+$/.test(value), {
+    message: "Identifiant en minuscules, sans espace.",
+  }),
+  title: optionalText(120),
+  categoryId: optionalText(40),
+  year: optionalText(10),
+  clientName: optionalText(120),
+  role: optionalText(160),
   featured: z.boolean(),
-  tags: z.string().trim().max(200),
-  probleme: z.string().trim().min(2).max(800),
-  concept: z.string().trim().min(2).max(800),
-  creation: z.string().trim().min(2).max(800),
-  resultat: z.string().trim().min(2).max(800),
-  sortOrder: z.coerce.number().int().min(0).max(999),
+  visible: z.boolean(),
+  tags: optionalText(200),
+  probleme: optionalText(800),
+  concept: optionalText(800),
+  creation: optionalText(800),
+  resultat: optionalText(800),
+  sortOrder: sortOrderField,
+});
+
+/** Réseau social affiché dans « Suivez-nous ». */
+export const socialLinkSchema = z.object({
+  platform: z.string().trim().refine(isSocialPlatform, { message: "Choisis un réseau dans la liste." }),
+  label: optionalText(60),
+  handle: optionalText(80),
+  url: z
+    .string()
+    .trim()
+    .max(500)
+    .refine(isSafeExternalUrl, { message: "Lien invalide : il doit commencer par https://" }),
+  visible: z.boolean(),
+  sortOrder: sortOrderField,
+});
+
+/** Témoignage client : nom et texte obligatoires, le reste facultatif. */
+export const testimonialSchema = z.object({
+  name: z.string().trim().min(2, "Indique le nom du client.").max(120),
+  role: optionalText(120),
+  company: optionalText(120),
+  quote: z.string().trim().min(10, "Le témoignage doit faire au moins 10 caractères.").max(1200),
+  visible: z.boolean(),
+  sortOrder: sortOrderField,
+});
+
+/**
+ * Avis envoyé par un visiteur depuis le site : nom et texte obligatoires, fonction et entreprise facultatives.
+ * Aucune photo ni donnée de contact n'est demandée.
+ */
+export const visitorReviewSchema = z.object({
+  name: z.string().trim().min(2, "Indiquez votre nom.").max(80),
+  role: optionalText(120),
+  company: optionalText(120),
+  quote: z.string().trim().min(20, "Votre avis doit faire au moins 20 caractères.").max(800),
+});
+
+/** Bascule « œil » : affiche ou masque un contenu sur le site public, sans le supprimer. */
+export const visibilitySchema = z.object({
+  entity: z.enum(["project", "social", "testimonial"]),
+  id: z.string().trim().min(1).max(80),
+  visible: z.boolean(),
 });
 
 export const serviceSchema = z.object({
@@ -85,27 +151,26 @@ export const settingsSchema = z.object({
   whatsapp: z.string().trim().url(),
   whatsappDisplay: z.string().trim().min(3).max(80),
   email: z.string().trim().email(),
-  instagram: z.string().trim().url(),
-  instagramHandle: z.string().trim().min(1).max(80),
-  tiktok: z.string().trim().url(),
-  tiktokHandle: z.string().trim().min(1).max(80),
-  behance: z.string().trim().url(),
-  behanceHandle: z.string().trim().min(1).max(80),
-  linkedin: z.union([z.literal(""), z.string().trim().url()]),
-  linkedinHandle: z.string().trim().max(80),
   aboutIntro: z.string().trim().min(10).max(800),
   aboutApproach: z.string().trim().min(10).max(800),
   aboutExperience: z.string().trim().min(10).max(800),
+  aboutTagline: optionalText(120),
   contactLocation: z.string().trim().min(2).max(80),
 });
 
+/**
+ * Formulaire de contact public. L'e-mail est facultatif ; s'il est saisi, son format est vérifié.
+ * Nom et message restent obligatoires.
+ */
 export const contactSchema = z.object({
   name: z.string().trim().min(2).max(120),
-  email: z.string().trim().email(),
-  phone: z.string().trim().max(40),
-  projectType: z.string().trim().max(80),
-  budget: z.string().trim().max(40),
-  delay: z.string().trim().max(80),
+  email: optionalText(160).refine((value) => value === "" || emailFormat.safeParse(value).success, {
+    message: "Adresse e-mail invalide.",
+  }),
+  phone: optionalText(40),
+  projectType: optionalText(80),
+  budget: optionalText(40),
+  delay: optionalText(80),
   message: z.string().trim().min(5).max(4000),
 });
 

@@ -34,7 +34,10 @@ function createPool(): Pool {
     connectionString: connectionString(process.env.DATABASE_URL),
     ssl: { rejectUnauthorized: false },
     max: 5,
-    connectionTimeoutMillis: 15000,
+    connectionTimeoutMillis: 10000,
+    // Libère vite les connexions inutilisées : le pooler Supabase a un nombre de places limité,
+    // partagé entre toutes les instances Vercel (et le site local, branché sur la même base).
+    idleTimeoutMillis: 10000,
   };
   return new Pool(config);
 }

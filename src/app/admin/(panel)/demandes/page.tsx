@@ -37,8 +37,9 @@ export default async function DemandesPage() {
                 <div>
                   <strong>{request.name}</strong>
                   <p>
-                    {formatDate(request.createdAt)} · {request.email}
-                    {request.phone ? ` · ${request.phone}` : ""}
+                    {[formatDate(request.createdAt), request.email || "E-mail non renseigné", request.phone]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                   <p>{[request.projectType, request.budget, request.delay].filter(Boolean).join(" · ")}</p>
                   <p>{request.message}</p>

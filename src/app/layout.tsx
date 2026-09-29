@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { VisitTracker } from "@/components/site/visit-tracker";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 import "./academy.css";
+import "./vitrine.css";
 
 const siteUrl = getSiteUrl();
 
@@ -68,11 +70,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500;1,600&family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500;1,600&family=Outfit:wght@300;400;500;600;700;800;900&family=Kaushan+Script&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <VisitTracker />
+      </body>
     </html>
   );
 }

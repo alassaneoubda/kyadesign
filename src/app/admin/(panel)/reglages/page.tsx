@@ -23,7 +23,7 @@ export default async function SettingsPage({
           <p className="bo-kicker">Réglages</p>
           <h1>Textes, images et contact</h1>
           <p className="bo-lead">
-            Hero, portrait, CV PDF, réseaux et textes affichés sur le site.
+            Hero, portrait, CV PDF, coordonnées et textes affichés sur le site.
           </p>
         </div>
       </header>
@@ -47,13 +47,18 @@ export default async function SettingsPage({
             Photo de présentation (À propos)
             <input name="portraitImage" type="file" accept="image/jpeg,image/png,image/webp,image/tiff" />
           </label>
+          <p className="full bo-hint">
+            Astuce : un PNG ou WebP <strong>détouré (fond transparent)</strong> reproduit exactement la maquette — le
+            portrait déborde de la forme jaune. Une photo classique est automatiquement cadrée dans une arche.
+          </p>
           {setting.portraitImage ? (
-            <div className="full">
+            <div className="full bo-cover-preview">
               <img
                 src={setting.portraitImage}
                 alt=""
-                style={{ width: 180, height: 240, objectFit: "cover" }}
+                style={{ width: 180, height: 240, objectFit: setting.portraitCutout ? "contain" : "cover" }}
               />
+              <span className="bo-badge">{setting.portraitCutout ? "Portrait détouré" : "Photo cadrée (arche)"}</span>
             </div>
           ) : null}
           <label className="full">
@@ -76,6 +81,10 @@ export default async function SettingsPage({
             <input name="aboutRole" defaultValue={setting.aboutRole} required />
           </label>
           <label className="full">
+            Accroche manuscrite (À propos) — un retour à la ligne par ligne, vide pour masquer
+            <textarea name="aboutTagline" rows={3} maxLength={120} defaultValue={setting.aboutTagline} />
+          </label>
+          <label className="full">
             Pied de page
             <input name="footerLine" defaultValue={setting.footerLine} required />
           </label>
@@ -93,7 +102,7 @@ export default async function SettingsPage({
           </label>
         </div>
 
-        <h2>Contact & réseaux</h2>
+        <h2>Contact</h2>
         <div className="bo-form-grid">
           <label>
             Téléphone (chat WhatsApp prérempli)
@@ -115,41 +124,10 @@ export default async function SettingsPage({
             Email
             <input name="email" type="email" defaultValue={setting.email} required />
           </label>
-          <label>
-            Instagram (lien)
-            <input name="instagram" defaultValue={setting.instagram} required />
-          </label>
-          <label>
-            Compte Instagram
-            <input name="instagramHandle" defaultValue={setting.instagramHandle} required />
-          </label>
-          <label>
-            TikTok (lien)
-            <input name="tiktok" defaultValue={setting.tiktok} required />
-          </label>
-          <label>
-            Compte TikTok
-            <input name="tiktokHandle" defaultValue={setting.tiktokHandle} required />
-          </label>
-          <label>
-            Behance (lien)
-            <input name="behance" defaultValue={setting.behance} required />
-          </label>
-          <label>
-            Compte Behance
-            <input name="behanceHandle" defaultValue={setting.behanceHandle} required />
-          </label>
-          <label>
-            LinkedIn (lien)
-            <input
-              name="linkedin"
-              defaultValue={setting.linkedin || "https://www.linkedin.com/in/yohann-armel-koukoui-77b2643b6"}
-            />
-          </label>
-          <label>
-            Compte LinkedIn
-            <input name="linkedinHandle" defaultValue={setting.linkedinHandle || "Yohann Armel Koukoui"} />
-          </label>
+          <p className="full bo-hint">
+            Les réseaux sociaux (Instagram, TikTok, LinkedIn…) se gèrent désormais dans{" "}
+            <a href="/admin/reseaux">Réseaux sociaux</a> : ajout, icône, ordre et visibilité.
+          </p>
         </div>
 
         <div className="bo-form-actions">

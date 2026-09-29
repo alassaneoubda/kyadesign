@@ -240,3 +240,6 @@ CREATE TABLE IF NOT EXISTS "public"."AdminAccount" (
 
     CONSTRAINT "AdminAccount_pkey" PRIMARY KEY ("id")
 );
+
+-- Vitrine (ajout 2026-09-29) : exécuter ensuite prisma/sql/V20260929__vitrine_reseaux_temoignages.sql
+-- (réseaux sociaux, témoignages, visibilité et champs facultatifs des réalisations).

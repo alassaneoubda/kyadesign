@@ -75,7 +75,7 @@ export type ContactBrief = {
  */
 export function buildContactMessage(brief: ContactBrief): string {
   const name = brief.name.trim() || "—";
-  const email = brief.email.trim() || "—";
+  const email = brief.email.trim() || "Non renseigné";
   const phone = brief.phone.trim() || "Non renseigné";
   const projectType = brief.projectType.trim() || "À préciser";
   const budget = brief.budget.trim() || "À discuter";

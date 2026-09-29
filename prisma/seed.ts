@@ -40,6 +40,15 @@ async function main() {
     },
   });
 
+  await prisma.socialLink.createMany({
+    data: [
+      ["instagram", "Instagram", "Kya_designer1", "https://instagram.com/kya_designer1"],
+      ["tiktok", "TikTok", "kyadesign0", "https://tiktok.com/@kyadesign0"],
+      ["behance", "Behance", "yohann armel koukoui", "https://www.behance.net/yohannkoukoui1"],
+      ["linkedin", "LinkedIn", "Yohann Armel Koukoui", "https://www.linkedin.com/in/yohann-armel-koukoui-77b2643b6"],
+    ].map(([platform, label, handle, url], sortOrder) => ({ platform, label, handle, url, sortOrder })),
+  });
+
   await prisma.fact.createMany({
     data: [
       { value: "08+", label: "Domaines d’expertise", sortOrder: 1 },

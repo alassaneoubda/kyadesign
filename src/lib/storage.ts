@@ -6,6 +6,7 @@ import { randomUUID } from "crypto";
 import { mkdir, writeFile, unlink } from "fs/promises";
 import path from "path";
 import sharp from "sharp";
+import { logError } from "@/lib/log";
 import {
   isR2Configured,
   r2CvKey,
@@ -110,6 +111,25 @@ export async function savePublicImage(
   }
 
   return `/api/uploads/${safeFolder}/${filename}`;
+}
+
+/**
+ * Détecte un visuel détouré (canal alpha réellement utilisé), ex. portrait PNG sans fond.
+ * @param file Image envoyée.
+ * @returns Vrai si au moins un pixel est transparent ; faux si l'image est opaque ou illisible.
+ */
+export async function imageHasTransparency(file: File): Promise<boolean> {
+  if (!file || file.size === 0) return false;
+  try {
+    const image = sharp(Buffer.from(await file.arrayBuffer()), { failOn: "none" });
+    const meta = await image.metadata();
+    if (!meta.hasAlpha) return false;
+    const stats = await image.stats();
+    return !stats.isOpaque;
+  } catch (error) {
+    logError("storage.alpha_detection", error);
+    return false;
+  }
 }
 
 /**

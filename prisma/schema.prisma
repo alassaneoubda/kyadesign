@@ -12,32 +12,80 @@ datasource db {
 }
 
 model SiteSetting {
-  id               Int    @id @default(1)
-  brand            String
-  personName       String
-  aboutName        String
-  aboutRole        String
-  footerLine       String
-  phone            String
-  whatsapp         String
-  whatsappDisplay  String
-  email            String
-  instagram        String
-  instagramHandle  String
-  tiktok           String
-  tiktokHandle     String
-  behance          String
-  behanceHandle    String
-  linkedin         String @default("")
-  linkedinHandle   String @default("")
-  aboutIntro       String
-  aboutApproach    String
-  aboutExperience  String
-  heroImage        String
-  portraitImage    String
-  logoImage        String
-  contactLocation  String
-  cvFileName       String
+  id              Int     @id @default(1)
+  brand           String
+  personName      String
+  aboutName       String
+  aboutRole       String
+  footerLine      String
+  phone           String
+  whatsapp        String
+  whatsappDisplay String
+  email           String
+  /// Dépréciés depuis 2026-09-29 : les réseaux sont gérés dans SocialLink. Conservés pour compatibilité.
+  instagram       String
+  instagramHandle String
+  tiktok          String
+  tiktokHandle    String
+  behance         String
+  behanceHandle   String
+  linkedin        String  @default("")
+  linkedinHandle  String  @default("")
+  aboutIntro      String
+  aboutApproach   String
+  aboutExperience String
+  /// Accroche manuscrite de la section « À propos » (retours à la ligne conservés).
+  aboutTagline    String  @default("Créer\ndes visuels\nqui ont du sens")
+  heroImage       String
+  portraitImage   String
+  /// Vrai si le portrait envoyé est détouré (fond transparent) : affichage « sujet devant la forme ».
+  portraitCutout  Boolean @default(false)
+  logoImage       String
+  contactLocation String
+  cvFileName      String
+}
+
+/// Réseaux sociaux affichés dans « Suivez-nous ».
+model SocialLink {
+  id        String   @id @default(cuid())
+  platform  String
+  label     String   @default("")
+  handle    String   @default("")
+  url       String
+  visible   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([visible, sortOrder])
+}
+
+/// Témoignages clients saisis dans le back-office (jamais générés).
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  role      String   @default("")
+  company   String   @default("")
+  quote     String
+  photo     String   @default("")
+  visible   Boolean  @default(true)
+  /// "admin" (saisi au back-office) ou "visitor" (envoyé depuis le site, masqué jusqu'à validation)
+  source    String   @default("admin")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([visible, sortOrder])
+  @@index([source, createdAt])
+}
+
+/// Audience du site, agrégée par jour (UTC = heure d'Abidjan). Aucune donnée personnelle stockée.
+model VisitDay {
+  day       DateTime @id @db.Date
+  views     Int      @default(0)
+  visitors  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /// Accès au back-office, modifiables depuis /admin/compte (ligne unique id = 1).
@@ -94,22 +142,27 @@ model Client {
   sortOrder Int
 }
 
+/// Tous les champs de contenu sont facultatifs : une valeur vide ("") signifie « non renseigné ».
 model Project {
   id         String         @id
-  title      String
-  categoryId String
-  year       String
-  clientName String
-  role       String
-  cover      String
+  title      String         @default("")
+  categoryId String         @default("")
+  year       String         @default("")
+  clientName String         @default("")
+  role       String         @default("")
+  cover      String         @default("")
   featured   Boolean        @default(false)
-  tags       String
-  probleme   String
-  concept    String
-  creation   String
-  resultat   String
-  sortOrder  Int
+  /// Faux = masquée du site public, conservée dans le back-office.
+  visible    Boolean        @default(true)
+  tags       String         @default("[]")
+  probleme   String         @default("")
+  concept    String         @default("")
+  creation   String         @default("")
+  resultat   String         @default("")
+  sortOrder  Int            @default(0)
   images     ProjectImage[]
+
+  @@index([visible, sortOrder])
 }
 
 model ProjectImage {
@@ -181,7 +234,8 @@ model Album {
 model ContactRequest {
   id          String   @id @default(cuid())
   name        String
-  email       String
+  /// Facultatif : "" quand le visiteur ne donne pas d'e-mail.
+  email       String   @default("")
   phone       String   @default("")
   projectType String   @default("")
   budget      String   @default("")

@@ -1,6 +1,7 @@
 import { getGuestCode } from "@/lib/auth";
 import { normalizeCode } from "@/lib/codes";
 import { prisma } from "@/lib/prisma";
+import { isSafeExternalUrl } from "@/lib/social";
 import { topicsFromJson } from "@/lib/validators";
 
 function parseTags(raw: string): string[] {
@@ -15,23 +16,54 @@ function parseTags(raw: string): string[] {
 
 /**
  * Charge tout le contenu public de la page d'accueil.
- * Les albums privés ne sont pas inclus.
+ * Les albums privés et les contenus masqués (réalisations, réseaux, témoignages) ne sont pas inclus :
+ * le filtrage est fait en base, jamais seulement dans le navigateur.
  */
 export async function getHomeData() {
-  const [setting, facts, skills, software, services, categories, clients, projects, formations, packs, modes] =
-    await Promise.all([
-      prisma.siteSetting.findUnique({ where: { id: 1 } }),
-      prisma.fact.findMany({ orderBy: { sortOrder: "asc" } }),
-      prisma.skill.findMany({ orderBy: { sortOrder: "asc" } }),
-      prisma.software.findMany({ orderBy: { sortOrder: "asc" } }),
-      prisma.service.findMany({ orderBy: { sortOrder: "asc" } }),
-      prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
-      prisma.client.findMany({ orderBy: { sortOrder: "asc" } }),
-      prisma.project.findMany({ orderBy: { sortOrder: "asc" }, include: { images: { orderBy: { sortOrder: "asc" } } } }),
-      prisma.formation.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" } }),
-      prisma.pack.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" } }),
-      prisma.trainingMode.findMany({ orderBy: { sortOrder: "asc" } }),
-    ]);
+  const [
+    setting,
+    facts,
+    skills,
+    software,
+    services,
+    categories,
+    clients,
+    projects,
+    formations,
+    packs,
+    modes,
+    socialLinks,
+    testimonials,
+  ] = await Promise.all([
+    prisma.siteSetting.findUnique({ where: { id: 1 } }),
+    prisma.fact.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.skill.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.software.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.service.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.client.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.project.findMany({
+      where: { visible: true },
+      orderBy: { sortOrder: "asc" },
+      take: 200,
+      include: { images: { orderBy: { sortOrder: "asc" } } },
+    }),
+    prisma.formation.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.pack.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.trainingMode.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.socialLink.findMany({
+      where: { visible: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      take: 30,
+      select: { id: true, platform: true, label: true, handle: true, url: true },
+    }),
+    prisma.testimonial.findMany({
+      where: { visible: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      take: 30,
+      select: { id: true, name: true, role: true, company: true, quote: true, photo: true },
+    }),
+  ]);
 
   if (!setting) {
     throw new Error("Contenu absent. Lance npm run db:setup.");
@@ -45,6 +77,8 @@ export async function getHomeData() {
     services,
     categories,
     clients,
+    socialLinks: socialLinks.filter((link) => isSafeExternalUrl(link.url)),
+    testimonials,
     projects: projects.map((project) => ({
       ...project,
       tags: parseTags(project.tags),

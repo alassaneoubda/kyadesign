@@ -19,6 +19,8 @@ const groups: { title: string; items: NavItem[] }[] = [
       { label: "Albums privés", href: "/admin/albums" },
       { label: "Réalisations", href: "/admin/projets" },
       { label: "Catégories", href: "/admin/categories" },
+      { label: "Témoignages", href: "/admin/temoignages" },
+      { label: "Réseaux sociaux", href: "/admin/reseaux" },
       { label: "Formations", href: "/admin/formations" },
       { label: "Packs", href: "/admin/packs" },
       { label: "Services", href: "/admin/services" },
