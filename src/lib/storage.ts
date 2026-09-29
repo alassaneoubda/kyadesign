@@ -21,6 +21,20 @@ import {
 
 const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"]);
 
+/** Motif de refus d'une image, affiché à l'administrateur (jamais de détail technique). */
+export type ImageErrorCode = "format" | "size" | "unreadable";
+
+/** Image refusée pour une raison compréhensible par l'utilisateur (format, poids, fichier illisible). */
+export class ImageValidationError extends Error {
+  constructor(
+    public readonly code: ImageErrorCode,
+    message: string
+  ) {
+    super(message);
+    this.name = "ImageValidationError";
+  }
+}
+
 /**
  * Extension autorisée. Les originaux ne sont jamais recompressés.
  * @param filename Nom d'origine du fichier.
@@ -77,9 +91,9 @@ export async function savePublicImage(
   options?: { compress?: boolean }
 ): Promise<string | null> {
   if (!file || file.size === 0) return null;
-  if (file.size > 25 * 1024 * 1024) throw new Error("Image trop lourde. Maximum 25 Mo.");
-  const ext = imageExtension(file.name) || (file.type === "image/svg+xml" ? "" : "");
-  if (!ext) throw new Error("Format accepté : JPG, PNG, WEBP ou TIFF.");
+  if (file.size > 25 * 1024 * 1024) throw new ImageValidationError("size", "Image trop lourde. Maximum 25 Mo.");
+  const ext = imageExtension(file.name);
+  if (!ext) throw new ImageValidationError("format", "Format accepté : JPG, PNG, WEBP ou TIFF.");
   const safeFolder = folder.replace(/[^a-z0-9_-]/gi, "");
   if (!safeFolder) throw new Error("Dossier image invalide.");
   const bytes = Buffer.from(await file.arrayBuffer());
@@ -88,13 +102,18 @@ export async function savePublicImage(
   let payload: Buffer;
   let contentType: string;
 
-  if (options?.compress && ext !== ".svg") {
+  if (options?.compress) {
     filename = `${randomUUID()}.webp`;
-    payload = await sharp(bytes, { failOn: "none" })
-      .rotate()
-      .resize({ width: 1200, withoutEnlargement: true })
-      .webp({ quality: 82 })
-      .toBuffer();
+    try {
+      payload = await sharp(bytes, { failOn: "none" })
+        .rotate()
+        .resize({ width: 1200, withoutEnlargement: true })
+        .webp({ quality: 82 })
+        .toBuffer();
+    } catch (error) {
+      logError("storage.image_decode", error);
+      throw new ImageValidationError("unreadable", "Image illisible (fichier abîmé ou format non pris en charge).");
+    }
     contentType = "image/webp";
   } else {
     filename = `${randomUUID()}${ext}`;

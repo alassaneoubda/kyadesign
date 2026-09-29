@@ -1108,6 +1108,24 @@
   transform: translateX(2px);
 }
 
+/* ─── Champ image (préparation avant envoi) ─── */
+.bo-field-note,
+.bo-field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.bo-field-note {
+  color: var(--bo-muted);
+}
+
+.bo-field-error {
+  color: var(--bo-danger);
+}
+
 /* ─── Avis visiteurs en attente ─── */
 .bo-pending {
   display: flex;

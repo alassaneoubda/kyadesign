@@ -1,5 +1,22 @@
 # Changelog — Kya Design
 
+## [Unreleased]
+
+### Changed
+- Formulaire de contact : nouvelles tranches de budget (10k–20k, 25k–40k, 50k–80k, 100k–300k, 300k–500k FCFA,
+  À discuter)
+- Academy : suppression du bloc « Modalités — Choisissez votre mode de formation » (le choix du mode reste
+  disponible dans le formulaire d'inscription)
+
+### Fixed
+- Impossible d'enregistrer une réalisation avec de grosses photos (« L'image n'a pas pu être envoyée ») :
+  les images sont réduites dans le navigateur avant l'envoi (1800 px max, WebP) pour rester sous la limite
+  de 4,5 Mo par requête de l'hébergeur ; envoi bloqué avec un message clair si le total reste trop lourd
+- Messages d'erreur précis à l'enregistrement d'une réalisation (format non pris en charge, fichier trop lourd,
+  image illisible, stockage indisponible) au lieu d'un message générique
+- Tests `src/lib/image-prep.test.ts` et `src/lib/storage.test.ts` (grosse photo, image abîmée, format HEIC,
+  fichier de plus de 25 Mo)
+
 ## [0.4.0] — 2026-09-29
 
 ### Added

@@ -5,6 +5,7 @@
  */
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import { Flash } from "@/components/admin/flash";
+import { ImageInput } from "@/components/admin/image-input";
 import { VisibilityToggle } from "@/components/admin/visibility-toggle";
 import { prisma } from "@/lib/prisma";
 import { joinDefined } from "@/lib/showcase";
@@ -12,7 +13,8 @@ import { deleteProjectAction, deleteProjectImageAction, saveProjectAction } from
 
 export const dynamic = "force-dynamic";
 
-const IMAGE_TYPES = "image/jpeg,image/png,image/webp,image/tiff";
+/** Tout type d'image : le navigateur convertit (HEIC, JFIF, AVIF…) et réduit avant l'envoi. */
+const IMAGE_TYPES = "image/*";
 
 const OK_MESSAGES = {
   enregistre: "Réalisation enregistrée.",
@@ -22,6 +24,11 @@ const OK_MESSAGES = {
 const ERROR_MESSAGES = {
   format: "Un champ n'est pas au bon format (identifiant : minuscules, chiffres et tirets uniquement).",
   image: "L'image n'a pas pu être envoyée. Formats acceptés : JPG, PNG, WebP, TIFF.",
+  "image-format":
+    "Format d'image refusé. Utilise une image JPG, PNG, WebP ou TIFF (les photos HEIC d'iPhone doivent être exportées en JPG).",
+  "image-size": "Image trop lourde (25 Mo maximum par image).",
+  "image-unreadable": "Une image est illisible (fichier abîmé ou format non pris en charge). Réenregistre-la en JPG.",
+  "image-stockage": "L'image n'a pas pu être enregistrée sur le stockage en ligne. Réessaie dans un instant.",
   introuvable: "Cette réalisation n'existe plus : recharge la page.",
   "1": "Enregistrement impossible, réessaie dans un instant.",
 };
@@ -121,7 +128,7 @@ export default async function ProjectsPage({ searchParams }: PageProps<"/admin/p
             </label>
             <label className="full">
               Couverture {editing?.cover ? "(laisser vide pour garder l’actuelle)" : ""}
-              <input name="cover" type="file" accept={IMAGE_TYPES} />
+              <ImageInput name="cover" accept={IMAGE_TYPES} />
             </label>
             {editing?.cover ? (
               <div className="full bo-cover-preview">
@@ -133,7 +140,7 @@ export default async function ProjectsPage({ searchParams }: PageProps<"/admin/p
             ) : null}
             <label className="full">
               Ajouter des images à la galerie
-              <input name="gallery" type="file" accept={IMAGE_TYPES} multiple />
+              <ImageInput name="gallery" accept={IMAGE_TYPES} multiple />
             </label>
             <label className="full">
               Problème

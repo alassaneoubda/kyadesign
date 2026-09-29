@@ -28,7 +28,14 @@ const PROJECT_TYPES = [
   "Captation vidéo",
 ];
 
-const BUDGETS = ["100–300k FCFA", "300k–1M FCFA", "1M–5M FCFA", "5M+ FCFA", "À discuter"];
+const BUDGETS = [
+  "10k–20k FCFA",
+  "25k–40k FCFA",
+  "50k–80k FCFA",
+  "100k–300k FCFA",
+  "300k–500k FCFA",
+  "À discuter",
+];
 
 const ICONS: Record<"mail" | "phone" | "pin", ReactNode> = {
   mail: (

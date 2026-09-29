@@ -16,7 +16,13 @@ import {
 import { createAccessCode, isAccessCode, normalizeCode } from "@/lib/codes";
 import { logError, logInfo } from "@/lib/log";
 import { slugify } from "@/lib/showcase";
-import { imageHasTransparency, savePublicImage, saveSoftwareIcon, saveCvPdf } from "@/lib/storage";
+import {
+  ImageValidationError,
+  imageHasTransparency,
+  savePublicImage,
+  saveSoftwareIcon,
+  saveCvPdf,
+} from "@/lib/storage";
 import { sendContactMail } from "@/lib/mail";
 import {
   adminAccountSchema,
@@ -404,7 +410,8 @@ export async function saveProjectAction(formData: FormData): Promise<void> {
     images = await uploadProjectImages(formData);
   } catch (error) {
     logError("project.upload", error);
-    redirect(`/admin/projets?erreur=image${existingId ? `&edit=${encodeURIComponent(existingId)}` : ""}`);
+    const reason = error instanceof ImageValidationError ? `image-${error.code}` : "image-stockage";
+    redirect(`/admin/projets?erreur=${reason}${existingId ? `&edit=${encodeURIComponent(existingId)}` : ""}`);
   }
 
   const data = { ...fields, categoryId: await resolveCategoryId(fields.categoryId), tags: tagsToJson(fields.tags) };
