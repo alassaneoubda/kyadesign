@@ -238,28 +238,6 @@ export function HomeClient({ data }: { data: HomeData }) {
 
           <div className="section-head academy-sub">
             <div>
-              <p className="kicker">Modalités</p>
-              <h2>Choisissez votre mode de formation</h2>
-            </div>
-          </div>
-          {data.modes.length > 0 ? (
-            <div className="academy-modes">
-              {data.modes.map((item, index) => (
-                <article className="academy-mode" style={indexStyle(index)} key={item.id}>
-                  <img src={item.image} alt="" loading="lazy" />
-                  <div>
-                    <h3>{item.title}</h3>
-                    <p>{item.lead}</p>
-                    <p>{item.detail}</p>
-                    <ul>{item.includes.map((line) => <li key={line}>{line}</li>)}</ul>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="section-head academy-sub">
-            <div>
               <p className="kicker">Parcours</p>
               <h2>Nos packs de formation</h2>
             </div>
