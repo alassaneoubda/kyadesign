@@ -35,9 +35,11 @@ function createPool(): Pool {
     ssl: { rejectUnauthorized: false },
     max: 5,
     connectionTimeoutMillis: 10000,
-    // Libère vite les connexions inutilisées : le pooler Supabase a un nombre de places limité,
-    // partagé entre toutes les instances Vercel (et le site local, branché sur la même base).
-    idleTimeoutMillis: 10000,
+    keepAlive: true,
+    // En production, libère vite les connexions inutilisées : le pooler Supabase a un nombre de places
+    // limité, partagé entre toutes les instances Vercel. En local, chaque page interroge la base
+    // (pas de cache) et l'ouverture d'une connexion peut prendre plusieurs secondes : on la garde.
+    idleTimeoutMillis: process.env.NODE_ENV === "production" ? 10000 : 120000,
   };
   return new Pool(config);
 }

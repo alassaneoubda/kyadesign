@@ -12,6 +12,19 @@ export function logInfo(action: string, fields: Record<string, string> = {}): st
   return traceId;
 }
 
+/**
+ * Incident rattrapé automatiquement (ex. nouvelle tentative réussie) : à surveiller, sans alerte.
+ * @param action Nom court de l'opération.
+ * @param error Cause ; seul son message est journalisé.
+ * @returns traceId de corrélation.
+ */
+export function logWarn(action: string, error: unknown): string {
+  const traceId = randomUUID();
+  const message = error instanceof Error ? error.message : "Erreur inconnue";
+  console.warn(JSON.stringify({ level: "warn", traceId, action, message, at: new Date().toISOString() }));
+  return traceId;
+}
+
 export function logError(action: string, error: unknown): string {
   const traceId = randomUUID();
   const message = error instanceof Error ? error.message : "Erreur inconnue";

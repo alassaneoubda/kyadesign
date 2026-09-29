@@ -6,7 +6,7 @@
  * Auteur : Kya Design — 2026-09-29 — v2
  */
 import { HomeClient } from "@/components/site/home-client";
-import { logError } from "@/lib/log";
+import { logWarn } from "@/lib/log";
 import { getHomeData } from "@/lib/queries";
 import { withRetry } from "@/lib/retry";
 
@@ -14,7 +14,7 @@ export const revalidate = 300;
 
 export default async function Page() {
   const data = await withRetry(getHomeData, {
-    onRetry: (error, attempt) => logError(`home.load.retry${attempt}`, error),
+    onRetry: (error, attempt) => logWarn(`home.load.retry${attempt}`, error),
   });
   return <HomeClient data={data} />;
 }

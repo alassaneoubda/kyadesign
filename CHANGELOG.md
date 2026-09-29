@@ -16,6 +16,11 @@
   image illisible, stockage indisponible) au lieu d'un message générique
 - Tests `src/lib/image-prep.test.ts` et `src/lib/storage.test.ts` (grosse photo, image abîmée, format HEIC,
   fichier de plus de 25 Mo)
+- Nouvelle tentative réussie de chargement de l'accueil journalisée en avertissement (`logWarn`) et non plus en
+  erreur : elle n'apparaît plus comme « Console Error » dans l'écran de développement
+- Site local : connexions à la base conservées 2 min (au lieu de 10 s) avec keep-alive, car leur ouverture
+  depuis le poste peut prendre plusieurs secondes ; réglage production inchangé
+- Tests `src/lib/log.test.ts`
 
 ## [0.4.0] — 2026-09-29
 
