@@ -9,7 +9,7 @@
     "postinstall": "prisma generate",
     "lint": "eslint",
     "db:setup": "prisma db push && tsx prisma/seed.ts",
-    "test": "tsx --test src/lib/academy.test.ts src/lib/site-url.test.ts src/lib/admin-account.test.ts src/lib/showcase.test.ts src/lib/visits.test.ts src/lib/reviews.test.ts src/lib/retry.test.ts src/lib/image-prep.test.ts src/lib/storage.test.ts src/lib/log.test.ts"
+    "test": "tsx --test src/lib/academy.test.ts src/lib/site-url.test.ts src/lib/admin-account.test.ts src/lib/showcase.test.ts src/lib/visits.test.ts src/lib/reviews.test.ts src/lib/retry.test.ts src/lib/image-prep.test.ts src/lib/storage.test.ts src/lib/log.test.ts src/lib/upload-limits.test.ts src/lib/upload-receipt.test.ts src/lib/upload-queue.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -56,12 +56,11 @@ export const albumSchema = z.object({
 
 /**
  * Réalisation : tous les champs de contenu sont facultatifs.
- * Seules les longueurs maximales et le format de l'identifiant (s'il est saisi) sont contrôlés.
+ * Seules les longueurs maximales et l'ordre (0 à 999) sont contrôlés ; l'identifiant saisi est converti en slug.
  */
 export const projectSchema = z.object({
-  id: optionalText(60).refine((value) => value === "" || /^[a-z0-9-]+$/.test(value), {
-    message: "Identifiant en minuscules, sans espace.",
-  }),
+  /** Saisie libre : convertie en identifiant d'URL (slug) côté serveur, jamais refusée. */
+  id: optionalText(60),
   title: optionalText(120),
   categoryId: optionalText(40),
   year: optionalText(10),

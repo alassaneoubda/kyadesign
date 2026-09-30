@@ -11,6 +11,8 @@ export type RetryOptions = {
   baseDelayMs?: number;
   /** Appelé avant chaque nouvel essai (journalisation). */
   onRetry?: (error: unknown, attempt: number) => void;
+  /** Faux = erreur définitive (ex. image refusée) : pas de nouvel essai. Par défaut, tout est réessayé. */
+  shouldRetry?: (error: unknown) => boolean;
   /** Injectable pour les tests. */
   sleep?: (ms: number) => Promise<void>;
 };
@@ -34,7 +36,7 @@ export async function withRetry<T>(task: () => Promise<T>, options: RetryOptions
       return await task();
     } catch (error) {
       lastError = error;
-      if (attempt === attempts) break;
+      if (attempt === attempts || options.shouldRetry?.(error) === false) break;
       options.onRetry?.(error, attempt);
       await sleep(baseDelayMs * 2 ** (attempt - 1));
     }

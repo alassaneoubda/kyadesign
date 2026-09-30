@@ -2,16 +2,34 @@
 
 ## [Unreleased]
 
+### Added
+- Réalisations : jusqu'à 100 images et 25 Mo (poids après optimisation) par enregistrement. Chaque image est
+  envoyée seule (sous 4 Mo) vers `POST /api/admin/project-images` (administrateur connecté, même origine),
+  qui renvoie un reçu signé ; l'enregistrement final ne transporte que ces reçus. Plafonds contrôlés dans le
+  navigateur et recontrôlés côté serveur (voir `DECISIONS.md`, ADR-001, et
+  `docs/FICHE-TECHNIQUE-UPLOAD-REALISATIONS.md`)
+- Formulaire réalisation : progression de l'envoi, miniatures retirables, compteur « N / 100 images · X Mo sur
+  25 Mo », message de réussite ou d'erreur à côté du bouton, formulaire verrouillé pendant l'envoi (pas de
+  double soumission), images déjà envoyées non renvoyées après un échec, 3 tentatives sur coupure réseau
+- Tests `upload-limits`, `upload-receipt` (falsification, doublon, plus de 100 images, plus de 25 Mo) et
+  `upload-queue`
+
 ### Changed
+- Section « À propos » : suppression de la forme jaune et du cadre en arche noir derrière le portrait ;
+  la photo est posée directement sur le panneau sombre, bords fondus
 - Formulaire de contact : nouvelles tranches de budget (10k–20k, 25k–40k, 50k–80k, 100k–300k, 300k–500k FCFA,
   À discuter)
 - Academy : suppression du bloc « Modalités — Choisissez votre mode de formation » (le choix du mode reste
   disponible dans le formulaire d'inscription)
 
 ### Fixed
+- Création d'une réalisation bloquée ou « retour en haut de page » sans message : le navigateur refusait
+  l'envoi (budget de 4 Mo sur le champ galerie, format imposé sur l'identifiant) et remontait vers le champ
+  fautif. Tous les champs sont désormais facultatifs (identifiant libre, converti côté serveur), l'ordre
+  d'affichage est aligné sur la limite serveur (0–999) et la page n'est plus rechargée à l'enregistrement
 - Impossible d'enregistrer une réalisation avec de grosses photos (« L'image n'a pas pu être envoyée ») :
-  les images sont réduites dans le navigateur avant l'envoi (1800 px max, WebP) pour rester sous la limite
-  de 4,5 Mo par requête de l'hébergeur ; envoi bloqué avec un message clair si le total reste trop lourd
+  les images sont réduites dans le navigateur avant l'envoi (1200 px, WebP) pour rester sous la limite
+  de 4,5 Mo par requête de l'hébergeur
 - Messages d'erreur précis à l'enregistrement d'une réalisation (format non pris en charge, fichier trop lourd,
   image illisible, stockage indisponible) au lieu d'un message générique
 - Tests `src/lib/image-prep.test.ts` et `src/lib/storage.test.ts` (grosse photo, image abîmée, format HEIC,

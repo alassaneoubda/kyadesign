@@ -5,16 +5,13 @@
  */
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import { Flash } from "@/components/admin/flash";
-import { ImageInput } from "@/components/admin/image-input";
+import { ProjectForm, type ProjectFormValues } from "@/components/admin/project-form";
 import { VisibilityToggle } from "@/components/admin/visibility-toggle";
 import { prisma } from "@/lib/prisma";
 import { joinDefined } from "@/lib/showcase";
-import { deleteProjectAction, deleteProjectImageAction, saveProjectAction } from "@/server/actions";
+import { deleteProjectAction, deleteProjectImageAction } from "@/server/actions";
 
 export const dynamic = "force-dynamic";
-
-/** Tout type d'image : le navigateur convertit (HEIC, JFIF, AVIF…) et réduit avant l'envoi. */
-const IMAGE_TYPES = "image/*";
 
 const OK_MESSAGES = {
   enregistre: "Réalisation enregistrée.",
@@ -22,15 +19,7 @@ const OK_MESSAGES = {
 };
 
 const ERROR_MESSAGES = {
-  format: "Un champ n'est pas au bon format (identifiant : minuscules, chiffres et tirets uniquement).",
-  image: "L'image n'a pas pu être envoyée. Formats acceptés : JPG, PNG, WebP, TIFF.",
-  "image-format":
-    "Format d'image refusé. Utilise une image JPG, PNG, WebP ou TIFF (les photos HEIC d'iPhone doivent être exportées en JPG).",
-  "image-size": "Image trop lourde (25 Mo maximum par image).",
-  "image-unreadable": "Une image est illisible (fichier abîmé ou format non pris en charge). Réenregistre-la en JPG.",
-  "image-stockage": "L'image n'a pas pu être enregistrée sur le stockage en ligne. Réessaie dans un instant.",
-  introuvable: "Cette réalisation n'existe plus : recharge la page.",
-  "1": "Enregistrement impossible, réessaie dans un instant.",
+  "1": "Opération impossible, réessaie dans un instant.",
 };
 
 function tagsText(raw: string): string {
@@ -58,6 +47,25 @@ export default async function ProjectsPage({ searchParams }: PageProps<"/admin/p
   ]);
   const editId = typeof query.edit === "string" ? query.edit : "";
   const editing = projects.find((item) => item.id === editId) ?? null;
+  const formValues: ProjectFormValues | null = editing
+    ? {
+        id: editing.id,
+        title: editing.title,
+        categoryId: editing.categoryId,
+        year: editing.year,
+        clientName: editing.clientName,
+        role: editing.role,
+        tags: tagsText(editing.tags),
+        cover: editing.cover,
+        probleme: editing.probleme,
+        concept: editing.concept,
+        creation: editing.creation,
+        resultat: editing.resultat,
+        sortOrder: editing.sortOrder,
+        visible: editing.visible,
+        featured: editing.featured,
+      }
+    : null;
   const categoryLabel = (id: string) => categories.find((category) => category.id === id)?.label ?? "";
   const visibleCount = projects.filter((project) => project.visible).length;
 
@@ -80,108 +88,12 @@ export default async function ProjectsPage({ searchParams }: PageProps<"/admin/p
       <Flash query={query} ok={OK_MESSAGES} errors={ERROR_MESSAGES} />
 
       <div className="bo-workspace">
-        <form className="bo-form" action={saveProjectAction} key={editing?.id ?? "new"}>
-          <h2>{editing ? "Modifier la réalisation" : "Nouvelle réalisation"}</h2>
-          {editing ? <input type="hidden" name="existingId" value={editing.id} /> : null}
-          <div className="bo-form-grid">
-            <label>
-              Identifiant (URL)
-              <input
-                name="id"
-                defaultValue={editing?.id ?? ""}
-                readOnly={Boolean(editing)}
-                placeholder="Généré depuis le titre"
-                pattern="[a-z0-9\-]*"
-                maxLength={60}
-              />
-            </label>
-            <label>
-              Année
-              <input name="year" defaultValue={editing?.year ?? ""} placeholder="2026" maxLength={10} />
-            </label>
-            <label className="full">
-              Titre
-              <input name="title" defaultValue={editing?.title ?? ""} maxLength={120} />
-            </label>
-            <label>
-              Catégorie
-              <select name="categoryId" defaultValue={editing?.categoryId ?? ""}>
-                <option value="">— Aucune —</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Client
-              <input name="clientName" defaultValue={editing?.clientName ?? ""} maxLength={120} />
-            </label>
-            <label className="full">
-              Rôle
-              <input name="role" defaultValue={editing?.role ?? ""} maxLength={160} />
-            </label>
-            <label className="full">
-              Mots-clés, séparés par des virgules
-              <input name="tags" defaultValue={editing ? tagsText(editing.tags) : ""} maxLength={200} />
-            </label>
-            <label className="full">
-              Couverture {editing?.cover ? "(laisser vide pour garder l’actuelle)" : ""}
-              <ImageInput name="cover" accept={IMAGE_TYPES} />
-            </label>
-            {editing?.cover ? (
-              <div className="full bo-cover-preview">
-                <img src={editing.cover} alt="" />
-                <label className="bo-check">
-                  <input type="checkbox" name="removeCover" /> Retirer la couverture
-                </label>
-              </div>
-            ) : null}
-            <label className="full">
-              Ajouter des images à la galerie
-              <ImageInput name="gallery" accept={IMAGE_TYPES} multiple />
-            </label>
-            <label className="full">
-              Problème
-              <textarea name="probleme" rows={2} defaultValue={editing?.probleme ?? ""} maxLength={800} />
-            </label>
-            <label className="full">
-              Concept
-              <textarea name="concept" rows={2} defaultValue={editing?.concept ?? ""} maxLength={800} />
-            </label>
-            <label className="full">
-              Création
-              <textarea name="creation" rows={2} defaultValue={editing?.creation ?? ""} maxLength={800} />
-            </label>
-            <label className="full">
-              Résultat
-              <textarea name="resultat" rows={2} defaultValue={editing?.resultat ?? ""} maxLength={800} />
-            </label>
-            <label>
-              Ordre
-              <input name="sortOrder" type="number" min={0} max={9999} defaultValue={editing?.sortOrder ?? projects.length + 1} />
-            </label>
-            <div className="bo-check-group">
-              <label className="bo-check">
-                <input type="checkbox" name="visible" defaultChecked={editing?.visible ?? true} /> Visible sur le site
-              </label>
-              <label className="bo-check">
-                <input type="checkbox" name="featured" defaultChecked={editing?.featured ?? false} /> Mise en avant
-              </label>
-            </div>
-          </div>
-          <div className="bo-form-actions">
-            <button className="btn" type="submit">
-              {editing ? "Enregistrer" : "Publier"}
-            </button>
-            {editing ? (
-              <a className="btn btn-ghost" href="/admin/projets" style={{ width: "auto" }}>
-                Annuler
-              </a>
-            ) : null}
-          </div>
-        </form>
+        <ProjectForm
+          key={editing?.id ?? "new"}
+          editing={formValues}
+          categories={categories.map(({ id, label }) => ({ id, label }))}
+          defaultSortOrder={projects.length + 1}
+        />
 
         <section className="bo-panel">
           <div className="bo-panel-head">

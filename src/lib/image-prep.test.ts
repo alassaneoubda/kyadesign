@@ -43,3 +43,11 @@ test("should_prepare_when_photoIsHeavyOrWrongFormat", () => {
 test("should_sendAsIs_when_lightImageInAcceptedFormat", () => {
   assert.equal(needsPreparation({ name: "a.png", type: "image/png", size: KEEP_UNDER_BYTES }), false);
 });
+
+test("should_prepare_when_mediumJpegWouldWasteSubmissionBudget", () => {
+  assert.equal(needsPreparation({ name: "a.jpg", type: "image/jpeg", size: 1_200_000 }), true);
+});
+
+test("should_matchServerStoredSize_when_defaultEdgeUsed", () => {
+  assert.deepEqual(fitWithin(4000, 3000), { width: 1200, height: 900 });
+});

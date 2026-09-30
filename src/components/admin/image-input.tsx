@@ -1,24 +1,22 @@
 "use client";
 
 /**
- * Champ image du back-office : réduit et convertit les photos dans le navigateur avant l'envoi
- * (limite de 4,5 Mo par requête chez l'hébergeur, formats HEIC/JFIF/AVIF refusés par le serveur).
- * Bloque l'envoi du formulaire si le total reste trop lourd, avec un message clair.
- * Auteur : Kya Design — 2026-09-29 — v1
+ * Sélecteur d'images du back-office : optimise les photos dans le navigateur (1200 px, WebP ; HEIC,
+ * JFIF, AVIF convertis), affiche les miniatures et permet de retirer une image avant l'envoi.
+ * Les images choisies s'ajoutent aux précédentes (galerie) ou remplacent l'actuelle (couverture).
+ * Auteur : Kya Design — 2026-09-29 — v2 (2026-09-30 : sélecteur contrôlé, miniatures)
  */
-import { useState, type ChangeEvent } from "react";
-import { fitWithin, isServerFormat, needsPreparation, renamedFor, REQUEST_BUDGET_BYTES } from "@/lib/image-prep";
+import { useEffect, useMemo, useState, type ChangeEvent, type Dispatch, type SetStateAction } from "react";
+import { fitWithin, isServerFormat, needsPreparation, renamedFor } from "@/lib/image-prep";
+import { MAX_IMAGE_REQUEST_BYTES } from "@/lib/upload-limits";
 
-type Status = { tone: "info" | "error"; text: string } | null;
-
-const QUALITY = 0.85;
-const MB = 1024 * 1024;
+const QUALITY = 0.9;
 
 function toBlob(canvas: HTMLCanvasElement, type: string): Promise<Blob | null> {
   return new Promise((resolve) => canvas.toBlob(resolve, type, QUALITY));
 }
 
-/** Réduit l'image (côté max 1800 px) ; lève une erreur si le navigateur ne sait pas la lire. */
+/** Réduit l'image (côté max 1200 px) ; lève une erreur si le navigateur ne sait pas la lire. */
 async function prepareImage(file: File): Promise<File> {
   if (!needsPreparation(file)) return file;
   const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
@@ -33,71 +31,92 @@ async function prepareImage(file: File): Promise<File> {
   return new File([blob], renamedFor(file.name, blob.type), { type: blob.type, lastModified: Date.now() });
 }
 
-/** Poids total des images déjà choisies dans tout le formulaire. */
-function formFilesBytes(form: HTMLFormElement | null): number {
-  if (!form) return 0;
-  return Array.from(form.querySelectorAll<HTMLInputElement>('input[type="file"]'))
-    .flatMap((input) => Array.from(input.files ?? []))
-    .reduce((total, file) => total + file.size, 0);
+/** Prépare les images une à une (mémoire maîtrisée même pour 100 photos). */
+async function prepareAll(chosen: File[]): Promise<{ ready: File[]; refused: string[] }> {
+  const ready: File[] = [];
+  const refused: string[] = [];
+  for (const file of chosen) {
+    try {
+      ready.push(await prepareImage(file));
+    } catch {
+      if (isServerFormat(file) && file.size <= MAX_IMAGE_REQUEST_BYTES) ready.push(file);
+      else refused.push(file.name);
+    }
+  }
+  return { ready, refused };
 }
 
+type Props = {
+  id: string;
+  name: string;
+  accept: string;
+  multiple?: boolean;
+  files: File[];
+  onFilesChange: Dispatch<SetStateAction<File[]>>;
+  onBusyChange: (busy: boolean) => void;
+  disabled?: boolean;
+};
+
 /**
- * @param props.name Nom du champ envoyé au serveur.
- * @param props.accept Types proposés dans le sélecteur de fichiers.
- * @param props.multiple Autorise plusieurs images.
+ * @param props.files Images prêtes (état tenu par le formulaire).
+ * @param props.onFilesChange Mise à jour de la liste (ajout, retrait).
+ * @param props.onBusyChange Signale l'optimisation en cours (l'envoi du formulaire attend la fin).
  */
-export function ImageInput({ name, accept, multiple = false }: { name: string; accept: string; multiple?: boolean }) {
-  const [status, setStatus] = useState<Status>(null);
-  const [busy, setBusy] = useState(false);
+export function ImageInput({ id, name, accept, multiple = false, files, onFilesChange, onBusyChange, disabled = false }: Props) {
+  const [preparing, setPreparing] = useState(0);
+  const [refused, setRefused] = useState<string[]>([]);
+  const previews = useMemo(() => files.map((file) => ({ file, url: URL.createObjectURL(file) })), [files]);
+  useEffect(() => () => previews.forEach((preview) => URL.revokeObjectURL(preview.url)), [previews]);
 
   async function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
     const chosen = Array.from(input.files ?? []);
-    input.form?.querySelectorAll<HTMLInputElement>('input[type="file"]').forEach((field) => field.setCustomValidity(""));
-    input.setCustomValidity("");
-    if (chosen.length === 0) return setStatus(null);
-
-    setBusy(true);
-    setStatus({ tone: "info", text: "Préparation des images…" });
-    const ready: File[] = [];
-    const refused: string[] = [];
-    for (const file of chosen) {
-      try {
-        ready.push(await prepareImage(file));
-      } catch {
-        if (isServerFormat(file) && file.size <= REQUEST_BUDGET_BYTES) ready.push(file);
-        else refused.push(file.name);
-      }
-    }
-    const transfer = new DataTransfer();
-    ready.forEach((file) => transfer.items.add(file));
-    input.files = transfer.files;
-    setBusy(false);
-
-    const total = formFilesBytes(input.form);
-    const problems: string[] = [];
-    if (refused.length > 0) {
-      problems.push(`Format non pris en charge, image ignorée : ${refused.join(", ")}. Exporte-la en JPG puis réessaie.`);
-    }
-    if (total > REQUEST_BUDGET_BYTES) {
-      const message = `Images trop lourdes pour un seul envoi (${(total / MB).toFixed(1)} Mo, 4 Mo maximum). Ajoute-les en plusieurs fois.`;
-      input.setCustomValidity(message);
-      problems.push(message);
-    }
-    if (problems.length > 0) return setStatus({ tone: "error", text: problems.join(" ") });
-    setStatus({
-      tone: "info",
-      text: `${ready.length} image${ready.length > 1 ? "s" : ""} prête${ready.length > 1 ? "s" : ""} (${(total / MB).toFixed(1)} Mo).`,
-    });
+    input.value = "";
+    if (chosen.length === 0) return;
+    setPreparing(chosen.length);
+    onBusyChange(true);
+    const { ready, refused: rejected } = await prepareAll(chosen);
+    setPreparing(0);
+    onBusyChange(false);
+    setRefused(rejected);
+    onFilesChange((current) => (multiple ? [...current, ...ready] : ready.slice(0, 1)));
   }
+
+  const remove = (index: number) => onFilesChange((current) => current.filter((_, position) => position !== index));
 
   return (
     <>
-      <input name={name} type="file" accept={accept} multiple={multiple} onChange={handleChange} disabled={busy} />
-      {status ? (
-        <small className={status.tone === "error" ? "bo-field-error" : "bo-field-note"} aria-live="polite">
-          {status.text}
+      <input
+        id={id}
+        name={name}
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        onChange={handleChange}
+        disabled={disabled || preparing > 0}
+      />
+      {preparing > 0 ? (
+        <small className="bo-field-note" aria-live="polite">
+          Optimisation de {preparing} image{preparing > 1 ? "s" : ""}…
         </small>
+      ) : null}
+      {refused.length > 0 ? (
+        <small className="bo-field-error" role="alert">
+          Format non pris en charge, image ignorée : {refused.join(", ")}. Exporte-la en JPG puis réessaie.
+        </small>
+      ) : null}
+      {previews.length > 0 ? (
+        <ul className="bo-picks">
+          {previews.map(({ file, url }, index) => (
+            <li key={url}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- aperçu local (blob:), non optimisable */}
+              <img src={url} alt="" loading="lazy" decoding="async" />
+              <button type="button" onClick={() => remove(index)} disabled={disabled} aria-label={`Retirer ${file.name}`}>
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : null}
     </>
   );

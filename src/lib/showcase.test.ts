@@ -78,8 +78,14 @@ test("should_acceptProject_when_onlyTitleProvided", () => {
   assert.equal(parsed.success && parsed.data.title, "Affiche festival");
 });
 
-test("should_rejectProject_when_identifierHasSpaces", () => {
-  const parsed = projectSchema.safeParse({ id: "Mon Projet", featured: false, visible: true });
+test("should_acceptProject_when_identifierHasSpacesOrCapitals", () => {
+  const parsed = projectSchema.safeParse({ id: "Mariage Paul & Awa", featured: false, visible: true });
+  assert.equal(parsed.success, true);
+  assert.equal(slugify(parsed.success ? parsed.data.id : ""), "mariage-paul-awa");
+});
+
+test("should_rejectProject_when_sortOrderOver999", () => {
+  const parsed = projectSchema.safeParse({ sortOrder: "1000", featured: false, visible: true });
   assert.equal(parsed.success, false);
 });
 

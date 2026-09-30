@@ -56,6 +56,18 @@ test("should_waitWithExponentialBackoff_when_retrying", async () => {
   assert.deepEqual(waits, [100, 200]);
 });
 
+test("should_stopImmediately_when_errorIsDefinitive", async () => {
+  let calls = 0;
+  await assert.rejects(
+    withRetry(async () => {
+      calls += 1;
+      throw new Error("image refusée");
+    }, { sleep: noSleep, shouldRetry: () => false }),
+    /image refusée/
+  );
+  assert.equal(calls, 1);
+});
+
 test("should_capAttemptsAtThree_when_moreRequested", async () => {
   let calls = 0;
   await assert.rejects(

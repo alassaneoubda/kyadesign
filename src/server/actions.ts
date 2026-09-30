@@ -4,6 +4,7 @@ import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAdminCredentials, saveAdminCredentials } from "@/lib/admin-account";
 import { requireAdmin } from "@/lib/admin-guard";
@@ -24,6 +25,8 @@ import {
   saveCvPdf,
 } from "@/lib/storage";
 import { sendContactMail } from "@/lib/mail";
+import { checkSubmission, submissionErrorMessage } from "@/lib/upload-limits";
+import { readUploadReceipts } from "@/lib/upload-receipt";
 import {
   adminAccountSchema,
   albumSchema,
@@ -365,25 +368,97 @@ function tagsToJson(raw: string): string {
   );
 }
 
-/** Envoie couverture et galerie avant toute écriture en base (pas d'appel externe dans la transaction). */
-async function uploadProjectImages(formData: FormData): Promise<{ cover: string | null; gallery: string[] }> {
-  const coverFile = formData.get("cover");
-  const cover = coverFile instanceof File ? await savePublicImage(coverFile, "creations", { compress: true }) : null;
+/** Résultat du formulaire réalisation : erreur à afficher, ou identifiant de la réalisation enregistrée. */
+export type ProjectFormState = { error: string } | { ok: true; projectId: string } | null;
+
+type ProjectImages = { cover: string | null; gallery: string[] };
+
+const PROJECT_ERRORS = {
+  format: "Un champ dépasse la longueur autorisée. Raccourcis-le puis réessaie.",
+  introuvable: "Cette réalisation n'existe plus : recharge la page.",
+  receipts: "L'envoi des images a expiré ou est invalide : recharge la page puis ajoute-les à nouveau.",
+  duplicate: "La même image a été envoyée deux fois : retire le doublon puis réessaie.",
+  storage: "Une image n'a pas pu être enregistrée sur le stockage en ligne. Réessaie dans un instant.",
+  save: "Enregistrement impossible pour le moment (base de données injoignable). Réessaie dans un instant.",
+} as const;
+
+const IMAGE_ERRORS: Record<ImageValidationError["code"], string> = {
+  format: "Format d'image refusé. Utilise une image JPG, PNG, WebP ou TIFF (les photos HEIC d'iPhone doivent être exportées en JPG).",
+  size: "Image trop lourde (25 Mo maximum par image).",
+  unreadable: "Une image est illisible (fichier abîmé ou format non pris en charge). Réenregistre-la en JPG.",
+};
+
+/**
+ * Images déjà envoyées une par une par le navigateur : reçus vérifiés (signature, fraîcheur),
+ * puis plafonds de la soumission (100 images, 25 Mo) recontrôlés côté serveur.
+ * @returns null si le formulaire ne contient pas de reçus (envoi classique sans JavaScript).
+ */
+function imagesFromReceipts(raw: FormDataEntryValue | null): ProjectImages | { error: string } | null {
+  if (typeof raw !== "string" || raw === "") return null;
+  const batch = readUploadReceipts(raw);
+  if (batch.ok) return { cover: batch.cover, gallery: batch.gallery };
+  if (batch.code === "limits") return fail(submissionErrorMessage(batch.check));
+  return fail(batch.code === "duplicate" ? PROJECT_ERRORS.duplicate : PROJECT_ERRORS.receipts);
+}
+
+/** Envoi classique (sans JavaScript) : mêmes plafonds, images stockées avant toute écriture en base. */
+async function imagesFromFiles(formData: FormData): Promise<ProjectImages | { error: string }> {
+  const coverEntry = formData.get("cover");
+  const coverFile = coverEntry instanceof File && coverEntry.size > 0 ? coverEntry : null;
   const files = formData.getAll("gallery").filter((item): item is File => item instanceof File && item.size > 0);
-  const gallery: string[] = [];
-  for (const file of files) {
-    const src = await savePublicImage(file, "creations", { compress: true });
-    if (src) gallery.push(src);
+  const check = checkSubmission([...(coverFile ? [coverFile] : []), ...files].map((file) => file.size));
+  if (!check.ok) return fail(submissionErrorMessage(check));
+  try {
+    const cover = coverFile ? await savePublicImage(coverFile, "creations", { compress: true }) : null;
+    const gallery: string[] = [];
+    for (const file of files) {
+      const src = await savePublicImage(file, "creations", { compress: true });
+      if (src) gallery.push(src);
+    }
+    return { cover, gallery };
+  } catch (error) {
+    if (error instanceof ImageValidationError) return fail(IMAGE_ERRORS[error.code]);
+    logError("project.upload", error);
+    return fail(PROJECT_ERRORS.storage);
   }
-  return { cover, gallery };
+}
+
+/** Écrit la réalisation et sa galerie en une seule transaction (aucun appel externe à l'intérieur). */
+async function persistProject(
+  existingId: string,
+  fields: z.infer<typeof projectSchema>,
+  images: ProjectImages,
+  removeCover: boolean
+): Promise<{ error: string } | { projectId: string }> {
+  const { id: requestedId, ...rest } = fields;
+  const data = { ...rest, categoryId: await resolveCategoryId(rest.categoryId), tags: tagsToJson(rest.tags) };
+  try {
+    const projectId = existingId || (await uniqueProjectId(requestedId || rest.title));
+    const start = existingId ? await prisma.projectImage.count({ where: { projectId } }) : 0;
+    const coverUpdate = images.cover ? { cover: images.cover } : removeCover ? { cover: "" } : {};
+    const gallery = images.gallery.map((src, index) => ({ projectId, src, sortOrder: start + index }));
+    await prisma.$transaction([
+      existingId
+        ? prisma.project.update({ where: { id: projectId }, data: { ...data, ...coverUpdate } })
+        : prisma.project.create({ data: { ...data, id: projectId, cover: images.cover ?? "" } }),
+      ...(gallery.length ? [prisma.projectImage.createMany({ data: gallery })] : []),
+    ]);
+    return { projectId };
+  } catch (error) {
+    logError("project.save", error);
+    return fail(PROJECT_ERRORS.save);
+  }
 }
 
 /**
  * Crée ou met à jour une réalisation. Tous les champs sont facultatifs :
  * un champ vide est enregistré vide et simplement masqué sur le site.
- * @param formData Formulaire back-office (existingId présent en modification).
+ * Les erreurs sont renvoyées au formulaire (saisie conservée, pas de rechargement de page).
+ * @param _state État précédent du formulaire.
+ * @param formData Champs du formulaire + reçus des images (« uploads ») ; existingId en modification.
+ * @returns Message d'erreur à afficher, ou identifiant de la réalisation enregistrée.
  */
-export async function saveProjectAction(formData: FormData): Promise<void> {
+export async function saveProjectAction(_state: ProjectFormState, formData: FormData): Promise<ProjectFormState> {
   await requireAdmin();
   const parsed = projectSchema.safeParse({
     id: formData.get("id"),
@@ -401,48 +476,26 @@ export async function saveProjectAction(formData: FormData): Promise<void> {
     resultat: formData.get("resultat"),
     sortOrder: formData.get("sortOrder"),
   });
-  if (!parsed.success) redirect("/admin/projets?erreur=format");
+  if (!parsed.success) return fail(PROJECT_ERRORS.format);
   const existingId = String(formData.get("existingId") ?? "").trim();
-  const { id: requestedId, ...fields } = parsed.data;
-
-  let images: { cover: string | null; gallery: string[] };
-  try {
-    images = await uploadProjectImages(formData);
-  } catch (error) {
-    logError("project.upload", error);
-    const reason = error instanceof ImageValidationError ? `image-${error.code}` : "image-stockage";
-    redirect(`/admin/projets?erreur=${reason}${existingId ? `&edit=${encodeURIComponent(existingId)}` : ""}`);
-  }
-
-  const data = { ...fields, categoryId: await resolveCategoryId(fields.categoryId), tags: tagsToJson(fields.tags) };
-  const removeCover = checked(formData, "removeCover");
-  let projectId = existingId;
   if (existingId) {
-    const exists = await prisma.project.findUnique({ where: { id: existingId }, select: { id: true } });
-    if (!exists) redirect("/admin/projets?erreur=introuvable");
-  } else {
-    projectId = await uniqueProjectId(requestedId || fields.title);
+    const exists = await prisma.project.findUnique({ where: { id: existingId }, select: { id: true } }).catch(() => null);
+    if (!exists) return fail(PROJECT_ERRORS.introuvable);
   }
 
-  const start = existingId ? await prisma.projectImage.count({ where: { projectId } }) : 0;
-  const coverUpdate = images.cover ? { cover: images.cover } : removeCover ? { cover: "" } : {};
-  try {
-    await prisma.$transaction([
-      existingId
-        ? prisma.project.update({ where: { id: projectId }, data: { ...data, ...coverUpdate } })
-        : prisma.project.create({ data: { ...data, id: projectId, cover: images.cover ?? "" } }),
-      ...images.gallery.map((src, index) =>
-        prisma.projectImage.create({ data: { projectId, src, sortOrder: start + index } })
-      ),
-    ]);
-  } catch (error) {
-    logError("project.save", error);
-    redirect(`/admin/projets?erreur=1${existingId ? `&edit=${encodeURIComponent(existingId)}` : ""}`);
-  }
-  logInfo(existingId ? "project.update" : "project.create", { projectId, visible: String(fields.visible) });
+  const images = imagesFromReceipts(formData.get("uploads")) ?? (await imagesFromFiles(formData));
+  if ("error" in images) return images;
+  const saved = await persistProject(existingId, parsed.data, images, checked(formData, "removeCover"));
+  if ("error" in saved) return saved;
+
+  logInfo(existingId ? "project.update" : "project.create", {
+    projectId: saved.projectId,
+    visible: String(parsed.data.visible),
+    images: String(images.gallery.length + (images.cover ? 1 : 0)),
+  });
   revalidatePath("/");
   revalidatePath("/admin/projets");
-  redirect("/admin/projets?ok=enregistre");
+  return { ok: true, projectId: saved.projectId };
 }
 
 export async function deleteProjectAction(formData: FormData): Promise<void> {

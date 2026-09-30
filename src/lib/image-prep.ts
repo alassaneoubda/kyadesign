@@ -1,18 +1,15 @@
 /**
- * Préparation des images avant envoi (règles pures, testables) : l'hébergeur (Vercel) refuse toute
- * requête de plus de 4,5 Mo ; les photos sont donc réduites dans le navigateur avant l'envoi.
- * Le serveur les ramène ensuite à 1200 px : aucune perte visible.
- * Auteur : Kya Design — 2026-09-29 — v1
+ * Préparation des images avant envoi (règles pures, testables).
+ * Les photos sont réduites dans le navigateur à la taille stockée par le serveur (1200 px) :
+ * aucune perte visible, et une centaine de photos tient dans le plafond de 25 Mo par soumission.
+ * Auteur : Kya Design — 2026-09-29 — v2 (2026-09-30 : 1200 px, seuil 300 Ko)
  */
 
-/** Plus grand côté (px) après réduction dans le navigateur. */
-export const MAX_EDGE = 1800;
+/** Plus grand côté (px) après réduction dans le navigateur — identique à la taille stockée. */
+export const MAX_EDGE = 1200;
 
 /** En dessous de ce poids, une image dans un format accepté est envoyée telle quelle. */
-export const KEEP_UNDER_BYTES = 1_500_000;
-
-/** Budget total d'un envoi (marge sous la limite de 4,5 Mo de Vercel). */
-export const REQUEST_BUDGET_BYTES = 4_000_000;
+export const KEEP_UNDER_BYTES = 300_000;
 
 const SERVER_EXTENSIONS = /\.(jpe?g|png|webp|tiff?)$/i;
 const SERVER_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/tiff"]);
