@@ -1,6 +1,6 @@
 /**
  * Section « À propos » — reproduction de la maquette validée :
- * panneau sombre + forme jaune + portrait à gauche, présentation claire à droite.
+ * panneau sombre + portrait à gauche (sans forme ni cadre), présentation claire à droite.
  * Contenu 100 % piloté par le back-office (réglages, chiffres clés, compétences).
  * Auteur : Kya Design — 2026-09-29 — v1
  */
@@ -13,22 +13,6 @@ type AboutProps = Pick<HomeData, "setting" | "facts" | "skills">;
 
 function stagger(index: number): CSSProperties {
   return { ["--i" as string]: index };
-}
-
-/** Forme jaune (trapèze aux angles arrondis) — étirée à la taille de son conteneur. */
-function AboutShape() {
-  return (
-    <svg className="about-kya-shape" viewBox="0 0 400 520" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-      <defs>
-        <linearGradient id="about-kya-yellow" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#ffd83a" />
-          <stop offset="1" stopColor="#ffc300" />
-        </linearGradient>
-      </defs>
-      <path className="about-kya-shape-ghost" d="M150 70 L176 70 L-14 520 L-40 520 Z" />
-      <path d="M232 0 H362 Q400 0 400 38 V520 H0 V470 L192 28 Q204 0 232 0 Z" fill="url(#about-kya-yellow)" />
-    </svg>
-  );
 }
 
 /**
@@ -59,7 +43,6 @@ export function AboutSection({ setting, facts, skills }: AboutProps) {
         ) : null}
 
         <div className={`about-kya-figure ${setting.portraitCutout ? "is-cutout" : "is-photo"}`}>
-          <AboutShape />
           {setting.portraitImage ? (
             <div className="about-kya-portrait">
               <img
