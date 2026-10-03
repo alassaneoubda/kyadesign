@@ -128,7 +128,7 @@ export function HomeClient({ data }: { data: HomeData }) {
       <section className="hero" id="top" aria-label="KYA Design Portfolio 2026">
         <div className="hero-stage">
           <div className="hero-parallax" id="hero-parallax">
-            <img src={setting.heroImage} alt="KYA Design Portfolio 2026 — Yohann Armel Koukoui" id="hero-img" />
+            <img src={setting.heroImage} alt="KYA Design Portfolio 2026 — Yohann Armel" id="hero-img" />
           </div>
         </div>
       </section>

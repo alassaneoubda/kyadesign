@@ -10,20 +10,20 @@ const siteUrl = getSiteUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Kya Design — Yohann Armel Koukoui",
+    default: "Kya Design — Yohann Armel",
     template: "%s · Kya Design",
   },
   description:
-    "Portfolio de Yohann Armel Koukoui, designer graphique à Abidjan. Identité visuelle, publicité, print, contenu digital et photographie.",
+    "Portfolio de Yohann Armel, designer graphique à Abidjan. Identité visuelle, publicité, print, contenu digital et photographie.",
   keywords: [
     "Kya Design",
-    "Yohann Armel Koukoui",
+    "Yohann Armel",
     "graphiste Abidjan",
     "identité visuelle",
     "photographe",
     "formation design",
   ],
-  authors: [{ name: "Yohann Armel Koukoui" }],
+  authors: [{ name: "Yohann Armel" }],
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "48x48" },
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     locale: "fr_CI",
     url: siteUrl,
     siteName: "Kya Design",
-    title: "Kya Design — Yohann Armel Koukoui",
+    title: "Kya Design — Yohann Armel",
     description:
       "Identité visuelle, publicité, print, contenu digital et photographie. Portfolio & Academy.",
     images: [
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kya Design — Yohann Armel Koukoui",
+    title: "Kya Design — Yohann Armel",
     description: "Designer graphique & photographe — Abidjan.",
     images: ["/assets/brand/kya-design-logo.png"],
   },

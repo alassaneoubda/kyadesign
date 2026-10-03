@@ -15,6 +15,8 @@
   `upload-queue`
 
 ### Changed
+- Titre du site et aperçu des liens partagés (WhatsApp, réseaux sociaux) : « Kya Design — Yohann Armel »,
+  sans le nom de famille ; description, mots-clés et auteur alignés
 - Section « À propos » : suppression de la forme jaune et du cadre en arche noir derrière le portrait ;
   la photo est posée directement sur le panneau sombre, bords fondus
 - Formulaire de contact : nouvelles tranches de budget (10k–20k, 25k–40k, 50k–80k, 100k–300k, 300k–500k FCFA,
@@ -23,6 +25,10 @@
   disponible dans le formulaire d'inscription)
 
 ### Fixed
+- Connexion au back-office refusée en production (« Identifiants incorrects ») quand `ADMIN_PASSWORD_HASH`
+  est collé sur Vercel avec les `\$` de `.env` (ou entre guillemets) : le hash est désormais nettoyé avant
+  comparaison. Chaque échec de connexion est journalisé avec sa raison (`not_configured`, `email`,
+  `password`), sans e-mail ni mot de passe
 - Création d'une réalisation bloquée ou « retour en haut de page » sans message : le navigateur refusait
   l'envoi (budget de 4 Mo sur le champ galerie, format imposé sur l'identifiant) et remontait vers le champ
   fautif. Tous les champs sont désormais facultatifs (identifiant libre, converti côté serveur), l'ordre

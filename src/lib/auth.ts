@@ -3,7 +3,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { getAdminCredentials, type AdminCredentials } from "@/lib/admin-account";
 import { sessionMatchesCredentials } from "@/lib/admin-session-rules";
-import { logError } from "@/lib/log";
+import { logError, logInfo } from "@/lib/log";
 
 const ADMIN_COOKIE = "kya_admin";
 const GUEST_COOKIE = "kya_guest";
@@ -34,9 +34,19 @@ async function signToken(payload: Record<string, string>, hours: number): Promis
  */
 export async function verifyAdminCredentials(email: string, password: string): Promise<AdminCredentials | null> {
   const credentials = await getAdminCredentials();
-  if (!credentials) return null;
-  if (email.trim().toLowerCase() !== credentials.email) return null;
-  return (await compare(password, credentials.passwordHash)) ? credentials : null;
+  if (!credentials) {
+    logInfo("admin.login_failed", { reason: "not_configured" });
+    return null;
+  }
+  if (email.trim().toLowerCase() !== credentials.email) {
+    logInfo("admin.login_failed", { reason: "email", source: credentials.source });
+    return null;
+  }
+  if (!(await compare(password, credentials.passwordHash))) {
+    logInfo("admin.login_failed", { reason: "password", source: credentials.source });
+    return null;
+  }
+  return credentials;
 }
 
 /**

@@ -1,7 +1,32 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { sessionMatchesCredentials } from "./admin-session-rules";
+import { compareSync, hashSync } from "bcryptjs";
+import { normalizeEnvPasswordHash, sessionMatchesCredentials } from "./admin-session-rules";
 import { adminAccountSchema } from "./validators";
+
+// ── Hash fourni par l'hébergeur (non-régression : connexion refusée sur Vercel) ──
+
+const SYNTHETIC_PASSWORD = "mot-de-passe-de-test-synthetique";
+const SYNTHETIC_HASH = hashSync(SYNTHETIC_PASSWORD, 4);
+
+test("should_acceptPassword_when_hashPastedWithEscapedDollars", () => {
+  const pasted = SYNTHETIC_HASH.replace(/\$/g, "\\$");
+  assert.equal(compareSync(SYNTHETIC_PASSWORD, pasted), false);
+  assert.equal(compareSync(SYNTHETIC_PASSWORD, normalizeEnvPasswordHash(pasted)), true);
+});
+
+test("should_acceptPassword_when_hashPastedWithQuotesOrSpaces", () => {
+  assert.equal(normalizeEnvPasswordHash(` "${SYNTHETIC_HASH}" `), SYNTHETIC_HASH);
+  assert.equal(normalizeEnvPasswordHash(`'${SYNTHETIC_HASH}'`), SYNTHETIC_HASH);
+});
+
+test("should_keepHashUnchanged_when_alreadyClean", () => {
+  assert.equal(normalizeEnvPasswordHash(SYNTHETIC_HASH), SYNTHETIC_HASH);
+});
+
+test("should_returnEmpty_when_hashMissing", () => {
+  assert.equal(normalizeEnvPasswordHash(undefined), "");
+});
 
 const ENV_CREDENTIALS = { email: "yohann@example.com", version: 0 };
 const DB_CREDENTIALS = { email: "nouveau@example.com", version: 2 };

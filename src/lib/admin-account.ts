@@ -3,6 +3,7 @@
  * Auteur : Yohann Armel Koukoui / Kya Design — 2026-09-28 — v1
  */
 import { Prisma } from "@prisma/client";
+import { normalizeEnvPasswordHash } from "@/lib/admin-session-rules";
 import { prisma } from "@/lib/prisma";
 
 export const ADMIN_ACCOUNT_ID = 1;
@@ -44,7 +45,7 @@ export async function getAdminCredentials(): Promise<AdminCredentials | null> {
     return { source: "db", email: stored.email, passwordHash: stored.passwordHash, version: stored.version };
   }
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase() ?? "";
-  const passwordHash = process.env.ADMIN_PASSWORD_HASH ?? "";
+  const passwordHash = normalizeEnvPasswordHash(process.env.ADMIN_PASSWORD_HASH);
   if (!email || !passwordHash) return null;
   return { source: "env", email, passwordHash, version: 0 };
 }

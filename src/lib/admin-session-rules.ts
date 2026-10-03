@@ -22,3 +22,18 @@ export function sessionMatchesCredentials(
   if (tokenEmail.toLowerCase() !== credentials.email) return false;
   return (tokenVersion ?? "0") === String(credentials.version);
 }
+
+/**
+ * Nettoie ADMIN_PASSWORD_HASH tel que fourni par l'hébergeur. Dans `.env`, les `$` du hash bcrypt
+ * sont échappés (`\$2a\$12\$…`) et Next retire les `\` ; Vercel injecte la valeur telle quelle.
+ * Un hash bcrypt ne contient jamais `\`, guillemet ni espace : les retirer est sans risque.
+ * @param raw Valeur brute de la variable d'environnement.
+ * @returns Le hash bcrypt utilisable par bcrypt.compare.
+ */
+export function normalizeEnvPasswordHash(raw: string | undefined): string {
+  return (raw ?? "")
+    .trim()
+    .replace(/^(["'])(.*)\1$/, "$2")
+    .replace(/\\\$/g, "$")
+    .trim();
+}
